@@ -1,0 +1,9 @@
+# Images / artwork stay out of git
+uploads/
+.thumbnail
+
+# macOS
+.DS_Store
+
+# Local Claude Code settings
+.claude/settings.local.json

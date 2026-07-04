@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art Placer</title>
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="icon" type="image/png" href="./favicon.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #f4f3f1; }
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  button { transition: filter 0.12s ease, background-color 0.12s ease; }
+  button:hover { filter: brightness(0.95); }
+  button:active { filter: brightness(0.9); }
+  label.btn-hover { transition: filter 0.12s ease; }
+  label.btn-hover:hover { filter: brightness(0.95); }
+</style>
+</helmet>
+
+<div ref="{{ rootRef }}" tabindex="0" style="display:flex;height:100vh;min-height:520px;width:100%;font-family:system-ui,-apple-system,sans-serif;color:#1c1b19;--accent:#4a63a6;background:#f4f3f1;outline:none">
+
+  <!-- ============ STAGE ============ -->
+  <div style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden">
+    <div ref="{{ wrapRef }}" onPointerDown="{{ onWrapDown }}" onDoubleClick="{{ onWrapDoubleClick }}" style="position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0;box-shadow:0 12px 40px -12px rgba(0,0,0,0.35);border-radius:2px;overflow:visible">
+      <img ref="{{ imgRef }}" src="{{ wallSrc }}" onLoad="{{ onImgLoad }}" draggable="false" style="display:block;max-width:100%;max-height:calc(100vh - 56px);width:auto;height:auto;user-select:none;border-radius:2px" />
+
+      <sc-for list="{{ patches }}" as="pt" hint-placeholder-count="0">
+        <div style="{{ pt.style }}"></div>
+      </sc-for>
+
+      <canvas ref="{{ brushRef }}" width="{{ dispWInt }}" height="{{ dispHInt }}" style="{{ brushCanvasStyle }}"></canvas>
+
+      {{ guideLayer }}
+      {{ wallLayer }}
+
+      <sc-for list="{{ pieces }}" as="p" hint-placeholder-count="0">
+        <div style="{{ p.style }}" onPointerDown="{{ p.onDown }}">
+          <sc-if value="{{ p.isImage }}" hint-placeholder-val="{{ true }}">
+            <img src="{{ p.src }}" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none" />
+          </sc-if>
+          <sc-for list="{{ p.handles }}" as="h" hint-placeholder-count="0">
+            <div style="{{ h.style }}" onPointerDown="{{ h.onDown }}"></div>
+          </sc-for>
+          <sc-if value="{{ p.showLabel }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 11px 'IBM Plex Mono',monospace;color:#1c1b19;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.12);max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
+          </sc-if>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ drawMode }}" hint-placeholder-val="{{ false }}">
+        <div onPointerDown="{{ onStageDown }}" onPointerMove="{{ onCatcherMove }}" onPointerLeave="{{ onCatcherLeave }}" style="{{ catcherStyle }}"></div>
+      </sc-if>
+      {{ brushCursorEl }}
+    </div>
+
+    <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(28,27,25,0.9);color:#fff;border-radius:9px;font:500 12.5px system-ui;box-shadow:0 8px 24px -8px rgba(0,0,0,0.5);pointer-events:none;padding:10px 15px;max-width:640px;text-align:center;line-height:1.4">{{ hintText }}</div>
+    </sc-if>
+  </div>
+
+  <!-- ============ PANEL ============ -->
+  <div style="flex:0 0 322px;width:322px;height:100vh;overflow-y:auto;background:#fff;border-left:1px solid #e6e5e2;padding:20px 18px 40px;display:flex;flex-direction:column;gap:16px">
+
+    <div>
+      <div style="font:600 15px system-ui;letter-spacing:-0.01em">Art Placer</div>
+      <div style="font:400 12px system-ui;color:#9a968f;margin-top:2px">Arrange art on your wall, to scale.</div>
+    </div>
+
+    <!-- SCALE -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f">1 · Scale</div>
+        <div style="font:500 10.5px 'IBM Plex Mono',monospace;color:{{ scaleStatusColor }}">{{ scaleStatus }}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 66px auto;gap:8px 8px;align-items:center;margin-bottom:11px">
+        <div style="font:400 11.5px system-ui;color:#6b6863">Wall height</div>
+        <input type="number" value="{{ wallHeightStr }}" onChange="{{ onWallHeight }}" onDoubleClick="{{ selectAll }}" style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none;text-align:right" />
+        <div style="display:flex;border:1px solid #e2e1de;border-radius:7px;overflow:hidden">
+          <button onClick="{{ onUnitIn }}" style="{{ unitInStyle }}">in</button>
+          <button onClick="{{ onUnitCm }}" style="{{ unitCmStyle }}">cm</button>
+        </div>
+        <div style="font:400 11.5px system-ui;color:#6b6863">Wall width</div>
+        <input type="number" value="{{ wallWidthStr }}" onChange="{{ onWallWidth }}" onDoubleClick="{{ selectAll }}" placeholder="opt." style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none;text-align:right" />
+        <button onClick="{{ onToggleLock }}" title="{{ lockTitle }}" style="{{ lockBtnStyle }}">{{ lockLabel }}</button>
+      </div>
+    </div>
+
+    <div style="height:1px;background:#efeeeb"></div>
+
+    <!-- ADD ART -->
+    <div>
+      <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">2 · Add art</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
+        <button onClick="{{ onToggleRectOptions }}" style="{{ addRectBtnStyle }}">Add rectangle</button>
+        <label class="btn-hover" style="{{ uploadStyle }}">
+          <span>Upload artwork</span>
+          <input type="file" accept="image/*" onChange="{{ onUpload }}" style="display:none" />
+        </label>
+        <button onClick="{{ onLift }}" style="{{ liftBtnStyle }}">{{ liftLabel }}</button>
+        <button onClick="{{ onToggleBrush }}" style="{{ brushBtnStyle }}">{{ brushLabel }}</button>
+      </div>
+
+      <sc-if value="{{ hasUploadError }}" hint-placeholder-val="{{ false }}">
+        <div style="font:400 11px system-ui;color:#c0392b;margin-bottom:9px;line-height:1.4;background:#fdf1ef;border:1px solid #f2d3ce;border-radius:7px;padding:8px 9px">{{ uploadError }}</div>
+      </sc-if>
+
+      <sc-if value="{{ showRectOptions }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom:9px;padding:9px 10px;border:1px solid #ecebe8;border-radius:8px;background:#fbfbfa">
+          <div style="display:flex;gap:8px;margin-bottom:9px">
+            <label style="flex:1">
+              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
+              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fff;outline:none" />
+            </label>
+            <label style="flex:1">
+              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
+              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fff;outline:none" />
+            </label>
+          </div>
+
+          <div style="display:flex;gap:7px;margin-bottom:11px">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+              <button onClick="{{ s.onPick }}" style="{{ s.style }}"></button>
+            </sc-for>
+          </div>
+
+          <button onClick="{{ onAddRect }}" style="{{ addRectStyle }}">Add rectangle</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showBrushControls }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:8px;padding:9px 10px;border:1px solid #ecebe8;border-radius:8px;background:#fbfbfa">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="flex:1;font:400 11.5px system-ui;color:#6b6863">Brush size</div>
+            <input type="range" min="0.012" max="0.09" step="0.002" value="{{ brushSize }}" onChange="{{ onBrushSize }}" style="flex:1.4" />
+          </div>
+          <button onClick="{{ onClearBrush }}" style="width:100%;padding:7px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:7px;font:600 12px system-ui;cursor:pointer">Clear brush strokes</button>
+          <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:7px;line-height:1.4">Paints with a color blended from the wall texture around the brush — good for touching up the seam after lifting art, or covering small blemishes.</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- LIBRARY -->
+    <sc-if value="{{ hasLibrary }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="height:1px;background:#efeeeb;margin-bottom:22px"></div>
+        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Library · {{ libraryCount }}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <sc-for list="{{ libraryRows }}" as="lb" hint-placeholder-count="0">
+            <div onClick="{{ lb.onPlace }}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid #efeeeb;background:#fff;min-width:0">
+              <div style="{{ lb.thumbStyle }}"></div>
+              <div style="flex:1;min-width:0">
+                <sc-if value="{{ lb.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ lb.editName }}" onChange="{{ lb.onEditName }}" onKeyDown="{{ lb.onEditKey }}" onBlur="{{ lb.onEditBlur }}" onClick="{{ lb.stopProp }}" autoFocus="{{ true }}" style="width:100%;padding:2px 5px;border:1px solid var(--accent);border-radius:4px;font:500 12.5px system-ui;outline:none" />
+                </sc-if>
+                <sc-if value="{{ lb.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div onDoubleClick="{{ lb.onStartRename }}" style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lb.name }}</div>
+                </sc-if>
+                <div style="font:400 11px 'IBM Plex Mono',monospace;color:#9a968f">{{ lb.dims }}</div>
+              </div>
+              <button onClick="{{ lb.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SELECTION -->
+    <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:10px">Selected · {{ selCount }}</div>
+        <sc-if value="{{ multiSel }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:9px">
+            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em">Align</div>
+            <div style="display:flex;gap:5px;margin-bottom:5px">
+              <button onClick="{{ onAlignL }}" style="{{ alignBtn }}">Left</button>
+              <button onClick="{{ onAlignCH }}" style="{{ alignBtn }}">Center</button>
+              <button onClick="{{ onAlignR }}" style="{{ alignBtn }}">Right</button>
+            </div>
+            <div style="display:flex;gap:5px;margin-bottom:5px">
+              <button onClick="{{ onAlignT }}" style="{{ alignBtn }}">Top</button>
+              <button onClick="{{ onAlignCV }}" style="{{ alignBtn }}">Middle</button>
+              <button onClick="{{ onAlignB }}" style="{{ alignBtn }}">Bottom</button>
+            </div>
+            <div style="display:flex;gap:5px">
+              <button onClick="{{ onDistH }}" style="{{ alignBtn }}">Space ↔</button>
+              <button onClick="{{ onDistV }}" style="{{ alignBtn }}">Space ↕</button>
+            </div>
+          </div>
+        </sc-if>
+        <div style="display:flex;gap:6px">
+          <button onClick="{{ onDuplicate }}" style="{{ selActionBtn }}">Duplicate</button>
+          <button onClick="{{ onDeleteSel }}" style="{{ selDeleteBtn }}">Delete</button>
+        </div>
+        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · Del to remove</div>
+      </div>
+    </sc-if>
+
+    <div style="height:1px;background:#efeeeb"></div>
+
+    <!-- DISPLAY -->
+    <div>
+      <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Display</div>
+      <button onClick="{{ onToggleDims }}" style="{{ dimsToggleStyle }}"><span>Dimension labels</span><span style="{{ dimsPillStyle }}">{{ dimsPillText }}</span></button>
+      <button onClick="{{ onToggleGuides }}" style="{{ guidesToggleStyle }}"><span>Alignment guides</span><span style="{{ guidesPillStyle }}">{{ guidesPillText }}</span></button>
+      <button onClick="{{ onToggleWall }}" style="{{ wallToggleStyle }}"><span>Wall bounds</span><span style="{{ wallPillStyle }}">{{ wallPillText }}</span></button>
+    </div>
+
+    <!-- PIECES -->
+    <sc-if value="{{ hasPieces }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">On the wall · {{ pieceCount }}</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ pieceRows }}" as="r" hint-placeholder-count="0">
+            <div onClick="{{ r.onSelect }}" style="{{ r.style }}">
+              <div style="{{ r.chipStyle }}"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
+                <div style="font:400 11px 'IBM Plex Mono',monospace;color:#9a968f">{{ r.dims }}</div>
+              </div>
+              <button onClick="{{ r.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="flex:1"></div>
+
+    <div style="display:flex;gap:6px">
+      <button onClick="{{ onSaveConfig }}" style="flex:1;padding:9px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 12px system-ui;cursor:pointer">Save config</button>
+      <label class="btn-hover" style="flex:1;display:flex;align-items:center;justify-content:center;padding:9px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 12px system-ui;cursor:pointer">
+        <span>Load config</span>
+        <input type="file" accept="application/json" onChange="{{ onLoadConfig }}" style="display:none" />
+      </label>
+    </div>
+    <div style="font:400 10.5px system-ui;color:#b0aca5;line-height:1.4;margin-top:-8px">Your work saves automatically in this browser. Use <b style="font-weight:600">Save config</b> to back it up or move it to another device.</div>
+
+    <sc-if value="{{ hasWallHistory }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-right:2px">Recent:</div>
+        <sc-for list="{{ wallHistoryRows }}" as="wh" hint-placeholder-count="0">
+          <button onClick="{{ wh.onRestore }}" style="{{ wh.style }}"></button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <label class="btn-hover" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;border:1px solid #e2e1de;border-radius:7px;font:500 11.5px system-ui;color:#6b6863;cursor:pointer;align-self:flex-start">
+      <span>Replace wall photo</span>
+      <input type="file" accept="image/*" onChange="{{ onReplaceWall }}" style="display:none" />
+    </label>
+  </div>
+
+  <!-- ============ CROP MODAL ============ -->
+  <sc-if value="{{ cropping }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:200;background:rgba(24,23,21,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="background:#fff;border-radius:14px;padding:20px;width:min(560px,94vw);max-height:92vh;overflow:auto;box-shadow:0 24px 60px -12px rgba(0,0,0,0.5)">
+        <div style="font:600 15px system-ui;margin-bottom:4px">Crop artwork</div>
+        <div style="font:400 12px system-ui;color:#9a968f;margin-bottom:14px">Drag the box to the edges of the art, then enter its real size.</div>
+
+        <div ref="{{ cropRef }}" style="position:relative;display:inline-block;line-height:0;max-width:100%;background:#f4f3f1;border-radius:8px;overflow:hidden;user-select:none">
+          <img src="{{ cropSrc }}" draggable="false" style="display:block;max-width:100%;max-height:46vh;width:auto;height:auto" />
+          <div onPointerDown="{{ onCropBoxDown }}" style="{{ cropBoxStyle }}">
+            <div onPointerDown="{{ onCropNW }}" style="position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:nwse-resize"></div>
+            <div onPointerDown="{{ onCropNE }}" style="position:absolute;right:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:nesw-resize"></div>
+            <div onPointerDown="{{ onCropSW }}" style="position:absolute;left:-7px;bottom:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:nesw-resize"></div>
+            <div onPointerDown="{{ onCropSE }}" style="position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:nwse-resize"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:16px">
+          <label style="flex:1">
+            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real width ({{ unit }})</div>
+            <input type="number" value="{{ cropW }}" onChange="{{ onCropW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none" />
+          </label>
+          <label style="flex:1">
+            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real height ({{ unit }})</div>
+            <input type="number" value="{{ cropH }}" onChange="{{ onCropH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none" />
+          </label>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button onClick="{{ onCropCancel }}" style="flex:0 0 auto;padding:9px 16px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 13px system-ui;cursor:pointer">Cancel</button>
+          <button onClick="{{ onCropConfirm }}" style="flex:1;padding:9px 16px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;font:600 13px system-ui;cursor:pointer">Add to wall</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4a63a6&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#4a63a6&quot;,&quot;#3f7d6e&quot;,&quot;#a15c4a&quot;,&quot;#6b6f76&quot;],&quot;section&quot;:&quot;Style&quot;},&quot;pieceShadow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Style&quot;},&quot;defaultUnit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;in&quot;,&quot;options&quot;:[&quot;in&quot;,&quot;cm&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Setup&quot;}}">
+class Component extends DCLogic {
+  rootRef = React.createRef();
+  wrapRef = React.createRef();
+  cropRef = React.createRef();
+  imgRef = React.createRef();
+  brushRef = React.createRef();
+
+  // ---- persistence flags (auto-save / restore via IndexedDB) ----
+  _restored = false;      // don't auto-save until we've loaded any prior session
+  _brushDirty = false;    // only re-serialize the brush canvas when it changed
+  _brushSnapshot = null;  // last serialized brush PNG (reused between saves)
+  _suppressGuessFor = null; // wallSrc whose bounds were restored — skip auto-guess
+
+  state = {
+    wallSrc: 'uploads/wall_image-1783003840450.jpg',
+    unit: 'in',
+    disp: { w: 0, h: 0 },
+    wall: { top: 0.06, bottom: 0.72, left: 0.03, right: 0.97 },
+    wallHeightIn: 96, wallHeightStr: '96',
+    wallWidthIn: 0, wallWidthStr: '',
+    liftMode: false, draft: null,
+    pieces: [], patches: [],
+    selectedIds: [],
+    showDims: true, showSpacing: true, showWall: true, wallLocked: false,
+    rectW: '10', rectH: '10', rectColor: '#b9563f', showRectOptions: false,
+    showAlignGrid: true,
+    crop: null,
+    snap: [],
+    uploadError: null,
+    library: [],
+    brushMode: false, brushSize: 0.035, brushCursor: null, brushStrokeCount: 0,
+    editingLibId: null, editingLibName: '',
+    wallHistory: [],
+  };
+
+  swatchColors = ['#b9563f', '#d9b26a', '#4a5a52', '#2f3a46', '#8a8f98', '#e8e2d6'];
+
+  componentDidMount() {
+    this.applyVars();
+    if (this.props.defaultUnit && this.props.defaultUnit !== this.state.unit) this.setState({ unit: this.props.defaultUnit });
+    try { const raw = localStorage.getItem('artPlacerLibrary'); if (raw) { const lib = JSON.parse(raw); if (Array.isArray(lib)) this.setState({ library: lib }); } } catch (e) {}
+    this.setState(s => ({ wallHistory: [s.wallSrc] }));
+    // restore the full working session (wall, scale, art, patches, brush,
+    // library) saved on the last visit — async, so the default renders first
+    // and then flips to the restored state.
+    this.restoreSession();
+    this._move = this.handleMove.bind(this);
+    this._up = this.handleUp.bind(this);
+    this._key = this.handleKey.bind(this);
+    window.addEventListener('pointermove', this._move);
+    window.addEventListener('pointerup', this._up);
+    window.addEventListener('keydown', this._key);
+    window.addEventListener('resize', () => this.measure());
+    this.ro = new ResizeObserver(() => this.measure());
+    if (this.wrapRef.current) this.ro.observe(this.wrapRef.current);
+    this.measure();
+    // belt-and-suspenders: poll briefly in case the image/layout settles after
+    // mount but before any resize/load event fires (fresh, uncached loads).
+    let tries = 0;
+    const poll = () => {
+      tries++;
+      const el = this.wrapRef.current;
+      if (el && !this.ro_observed) { this.ro.observe(el); this.ro_observed = true; }
+      if (!this.state.disp.w) this.measure();
+      if (!this.wctx && this.imgRef.current && this.imgRef.current.complete && this.imgRef.current.naturalWidth) this.buildWallCanvas();
+      if ((!this.state.disp.w || !this.wctx) && tries < 30) requestAnimationFrame(poll);
+    };
+    requestAnimationFrame(poll);
+  }
+  componentDidUpdate() { this.applyVars(); this.syncBrushCanvas(); this.queueAutosave(); }
+  // redraw the display brush canvas from the natural-res stroke buffer
+  syncBrushCanvas() {
+    const cv = this.brushRef.current; if (!cv || !this.brushNat) return;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    try { ctx.drawImage(this.brushNat, 0, 0, cv.width, cv.height); } catch (e) {}
+  }
+
+  // ---- undo ----
+  pushHistory() {
+    if (!this.history) this.history = [];
+    this.history.push({ pieces: this.state.pieces, patches: this.state.patches });
+    if (this.history.length > 40) this.history.shift();
+  }
+  undo() {
+    if (!this.history || !this.history.length) return;
+    const snap = this.history.pop();
+    this.setState({ pieces: snap.pieces, patches: snap.patches, selectedIds: [] });
+  }
+  componentWillUnmount() {
+    window.removeEventListener('pointermove', this._move);
+    window.removeEventListener('pointerup', this._up);
+    window.removeEventListener('keydown', this._key);
+    if (this.ro) this.ro.disconnect();
+    clearTimeout(this._saveTimer);
+  }
+
+  // ---- persistence: auto-save the whole working session to IndexedDB so a
+  // reload restores the wall, calibration, art, patches, brush and library
+  // without a manual "Save config". IndexedDB (not localStorage) so large
+  // base64 photos never hit the ~5MB quota and writes stay off the main thread.
+  _openDB() {
+    if (this._dbPromise) return this._dbPromise;
+    this._dbPromise = new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open('artPlacer', 1);
+        req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } catch (e) { reject(e); }
+    });
+    return this._dbPromise;
+  }
+  _idbGet(key) {
+    return this._openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readonly'); const rq = tx.objectStore('kv').get(key);
+      rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+    })).catch(() => undefined);
+  }
+  _idbPut(key, val) {
+    return this._openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(val, key);
+      tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+    })).catch(() => {});
+  }
+  sessionData() {
+    const S = this.state;
+    // only rasterize the (potentially large) brush layer when it actually changed
+    if (this._brushDirty && this.brushNat) { try { this._brushSnapshot = this.brushNat.toDataURL('image/png'); } catch (e) {} this._brushDirty = false; }
+    return {
+      version: 3, unit: S.unit, wall: S.wall,
+      wallHeightIn: S.wallHeightIn, wallWidthIn: S.wallWidthIn,
+      pieces: S.pieces, patches: S.patches, wallSrc: S.wallSrc,
+      brush: this._brushSnapshot || null,
+      showDims: S.showDims, showSpacing: S.showSpacing, showWall: S.showWall,
+      showAlignGrid: S.showAlignGrid, wallLocked: S.wallLocked,
+      wallHistory: S.wallHistory, library: S.library,
+    };
+  }
+  queueAutosave() {
+    if (!this._restored) return;
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => { this._idbPut('session', this.sessionData()); }, 500);
+  }
+  restoreSession() {
+    this._idbGet('session')
+      .then(data => { if (data) this.applyRestore(data); })
+      .catch(() => {})
+      .then(() => { this._restored = true; });
+  }
+  applyRestore(data) {
+    try {
+      const u = data.unit || this.state.unit;
+      const r1 = (x) => { const v = Math.round(x * 10) / 10; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)); };
+      const conv = (inch) => u === 'cm' ? inch * 2.54 : inch;
+      const patch = {
+        unit: u,
+        wall: data.wall || this.state.wall,
+        wallHeightIn: data.wallHeightIn || 0, wallHeightStr: data.wallHeightIn ? r1(conv(data.wallHeightIn)) : '',
+        wallWidthIn: data.wallWidthIn || 0, wallWidthStr: data.wallWidthIn ? r1(conv(data.wallWidthIn)) : '',
+        pieces: data.pieces || [], patches: data.patches || [], selectedIds: [],
+      };
+      if (Array.isArray(data.library)) patch.library = data.library;
+      if (Array.isArray(data.wallHistory) && data.wallHistory.length) patch.wallHistory = data.wallHistory;
+      ['showDims', 'showSpacing', 'showWall', 'showAlignGrid', 'wallLocked'].forEach(k => { if (typeof data[k] === 'boolean') patch[k] = data[k]; });
+      // protect restored wall bounds from the auto-guess that fires on image load
+      if (data.wall) this._suppressGuessFor = data.wallSrc || this.state.wallSrc;
+      if (data.brush) { this.pendingBrush = data.brush; this._brushSnapshot = data.brush; }
+      if (data.wallSrc && data.wallSrc !== this.state.wallSrc) {
+        patch.wallSrc = data.wallSrc;
+        this.wctx = null; this.brushNat = null;
+        setTimeout(() => { this.measure(); this.buildWallCanvas(); }, 60);
+      } else if (data.brush) {
+        setTimeout(() => this.buildWallCanvas(), 30);
+      }
+      this.history = [];
+      this.setState(patch);
+    } catch (e) {}
+  }
+  applyVars() { if (this.rootRef.current) this.rootRef.current.style.setProperty('--accent', this.accent()); }
+  accent() { return this.props.accent || '#4a63a6'; }
+
+  measure() { const el = this.wrapRef.current; if (el) { const r = el.getBoundingClientRect(); if (r.width) this.setState({ disp: { w: r.width, h: r.height } }); } }
+  onImgLoad() { this.measure(); this.buildWallCanvas(); }
+
+  // wall image sampling canvas + auto-guess bounds
+  buildWallCanvas() {
+    try {
+      const img = this.imgRef.current; if (!img || !img.naturalWidth) return;
+      const nw = img.naturalWidth, nh = img.naturalHeight;
+      const cv = document.createElement('canvas'); cv.width = nw; cv.height = nh;
+      const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0);
+      this.wctx = ctx; this.wnat = { w: nw, h: nh };
+      // natural-resolution stroke buffer: brush strokes live here so they survive
+      // window resizes (the display canvas clears when its size attrs change)
+      const bn = document.createElement('canvas'); bn.width = nw; bn.height = nh;
+      this.brushNat = bn;
+      if (this.pendingBrush) {
+        const src = this.pendingBrush; this.pendingBrush = null;
+        const im = new Image();
+        im.onload = () => { try { bn.getContext('2d').drawImage(im, 0, 0, nw, nh); ctx.drawImage(im, 0, 0, nw, nh); this.syncBrushCanvas(); } catch (e) {} };
+        im.src = src;
+      }
+      this.guessWall(ctx, nw, nh);
+    } catch (e) { /* keep default bounds */ }
+  }
+  // Robust wall-bounds auto-detect. Samples a low-res grid, scores each pixel by
+  // both "wall-likeness" (bright, low-saturation) and local texture flatness
+  // (walls are smooth; art/frames/furniture have edges), then finds the longest
+  // qualifying run along rows (top/bottom) and — independently, across the WHOLE
+  // image height, not just the top/bottom band — along columns (left/right), so
+  // a failed top/bottom read never blocks a left/right read or vice versa.
+  guessWall(ctx, nw, nh) {
+    // if these bounds were restored from a saved session, keep them — don't
+    // overwrite the user's calibration with a fresh auto-guess.
+    if (this._suppressGuessFor && this._suppressGuessFor === this.state.wallSrc) return;
+    try {
+      const N = 96, M = Math.round(N * nh / nw);
+      const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = M;
+      tmp.getContext('2d').drawImage(ctx.canvas, 0, 0, N, M);
+      const d = tmp.getContext('2d').getImageData(0, 0, N, M).data;
+      const lum = new Float32Array(N * M);
+      const wallish = new Float32Array(N * M);
+      for (let y = 0; y < M; y++) for (let x = 0; x < N; x++) {
+        const i = (y * N + x) * 4, r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+        const light = (mx + mn) / 2, sat = mx === 0 ? 0 : (mx - mn) / mx;
+        lum[y * N + x] = light;
+        wallish[y * N + x] = (light > 0.5 && sat < 0.32) ? 1 : 0;
+      }
+      // local texture flatness: penalize pixels near a strong luminance gradient
+      // (frame edges, furniture silhouettes) even if their own color looks wall-like
+      const flat = new Float32Array(N * M);
+      for (let y = 0; y < M; y++) for (let x = 0; x < N; x++) {
+        const gx = x < N - 1 ? lum[y * N + x + 1] - lum[y * N + x] : 0;
+        const gy = y < M - 1 ? lum[(y + 1) * N + x] - lum[y * N + x] : 0;
+        flat[y * N + x] = Math.hypot(gx, gy) < 0.09 ? 1 : 0;
+      }
+      const score = new Float32Array(N * M);
+      for (let k = 0; k < N * M; k++) score[k] = wallish[k] * flat[k];
+
+      const longestRun = (frac, count, thresh) => {
+        let best = { len: 0, a: 0, b: 0 }, runA = -1;
+        for (let i = 0; i <= count; i++) {
+          const ok = i < count && frac(i) > thresh;
+          if (ok && runA < 0) runA = i;
+          if (!ok && runA >= 0) { if (i - runA > best.len) best = { len: i - runA, a: runA, b: i }; runA = -1; }
+        }
+        return best;
+      };
+      // try progressively looser thresholds so noisy/dim photos still resolve
+      const runWithFallback = (frac, count, minFracLen) => {
+        for (const t of [0.6, 0.5, 0.4, 0.3]) {
+          const best = longestRun(frac, count, t);
+          if (best.len > count * minFracLen) return best;
+        }
+        return null;
+      };
+
+      const rowFrac = (y) => { let n = 0; for (let x = 0; x < N; x++) n += score[y * N + x]; return n / N; };
+      const rowBest = runWithFallback(rowFrac, M, 0.15);
+      if (rowBest) {
+        const top = Math.max(0, rowBest.a / M - 0.01), bottom = Math.min(1, rowBest.b / M);
+        this.setState(s => ({ wall: { ...s.wall, top, bottom } }));
+      }
+
+      // left/right: independent of the row band — score across full image height
+      const colFrac = (x) => { let n = 0; for (let y = 0; y < M; y++) n += score[y * N + x]; return n / M; };
+      const colBest = runWithFallback(colFrac, N, 0.2);
+      if (colBest) {
+        const left = Math.max(0, colBest.a / N - 0.01), right = Math.min(1, colBest.b / N + 0.01);
+        this.setState(s => ({ wall: { ...s.wall, left, right } }));
+      }
+    } catch (e) { /* keep defaults */ }
+  }
+  // Inverse-distance-weighted fill: samples MANY points around the whole
+  // perimeter just outside the lifted rectangle (not just 4 corners), then for
+  // every pixel blends all of them weighted by 1/distance². More perimeter
+  // points means the fill can follow non-linear falloff (a lamp glow hitting
+  // one edge, a shadow in a corner) instead of a plain diagonal blend — a
+  // closer approximation of real inpainting. Computed at low res + scaled up
+  // with smoothing for a soft result and to keep it fast.
+  makeGradientFill(rf) {
+    if (!this.wctx || !this.wnat) return { url: null, canvas: null, avgColor: '#d7d8dc' };
+    const nat = this.wnat;
+    const x0 = rf.x * nat.w, y0 = rf.y * nat.h, rw = rf.w * nat.w, rh = rf.h * nat.h;
+    const pad = Math.max(6, Math.round(Math.min(rw, rh) * 0.06));
+    const sampleBox = (cx, cy) => {
+      const bx = Math.min(nat.w - 7, Math.max(0, Math.round(cx - 3)));
+      const by = Math.min(nat.h - 7, Math.max(0, Math.round(cy - 3)));
+      try {
+        const d = this.wctx.getImageData(bx, by, 7, 7).data;
+        let R = 0, G = 0, B = 0, n = d.length / 4;
+        for (let i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; }
+        return [R / n, G / n, B / n];
+      } catch (e) { return [215, 215, 215]; }
+    };
+    // perimeter sample points: corners + subdivisions along all 4 edges
+    const EDGE_N = 6;
+    const perim = [];
+    const addEdge = (x1, y1, x2, y2) => { for (let i = 0; i <= EDGE_N; i++) { const t = i / EDGE_N; perim.push({ x: x1 + (x2 - x1) * t, y: y1 + (y2 - y1) * t }); } };
+    addEdge(x0 - pad, y0 - pad, x0 + rw + pad, y0 - pad); // top
+    addEdge(x0 - pad, y0 + rh + pad, x0 + rw + pad, y0 + rh + pad); // bottom
+    addEdge(x0 - pad, y0 - pad, x0 - pad, y0 + rh + pad); // left
+    addEdge(x0 + rw + pad, y0 - pad, x0 + rw + pad, y0 + rh + pad); // right
+    const pts = perim.map(p => ({ x: p.x, y: p.y, c: sampleBox(p.x, p.y) }));
+
+    // low-res IDW grid (fast), aspect-matched to the patch
+    const MAXG = 64;
+    const gw = rw >= rh ? MAXG : Math.max(8, Math.round(MAXG * rw / rh));
+    const gh = rh >= rw ? MAXG : Math.max(8, Math.round(MAXG * rh / rw));
+    const gcv = document.createElement('canvas'); gcv.width = gw; gcv.height = gh;
+    const gctx = gcv.getContext('2d');
+    const gData = gctx.createImageData(gw, gh);
+    const POW = 2.2;
+    for (let gy = 0; gy < gh; gy++) {
+      const py = y0 + rh * (gy + 0.5) / gh;
+      for (let gx = 0; gx < gw; gx++) {
+        const px = x0 + rw * (gx + 0.5) / gw;
+        let wsum = 0, r = 0, g = 0, b = 0;
+        for (let k = 0; k < pts.length; k++) {
+          const p = pts[k]; const dx = p.x - px, dy = p.y - py; const d2 = Math.max(dx * dx + dy * dy, 1);
+          const wgt = 1 / Math.pow(d2, POW / 2);
+          wsum += wgt; r += p.c[0] * wgt; g += p.c[1] * wgt; b += p.c[2] * wgt;
+        }
+        const i = (gy * gw + gx) * 4;
+        gData.data[i] = r / wsum; gData.data[i + 1] = g / wsum; gData.data[i + 2] = b / wsum; gData.data[i + 3] = 255;
+      }
+    }
+    gctx.putImageData(gData, 0, 0);
+
+    const w = Math.max(2, Math.round(rw)), h = Math.max(2, Math.round(rh));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(gcv, 0, 0, gw, gh, 0, 0, w, h);
+
+    let avgR = 0, avgG = 0, avgB = 0; pts.forEach(p => { avgR += p.c[0]; avgG += p.c[1]; avgB += p.c[2]; });
+    const n = pts.length; const avg = [avgR / n, avgG / n, avgB / n];
+    let url = null; try { url = cv.toDataURL('image/png'); } catch (e) {}
+    return { url, canvas: cv, avgColor: 'rgb(' + Math.round(avg[0]) + ',' + Math.round(avg[1]) + ',' + Math.round(avg[2]) + ')' };
+  }
+
+  // units
+  toIn(str) { const n = parseFloat(str) || 0; return this.state.unit === 'cm' ? n / 2.54 : n; }
+  fmt(inches) { const v = this.state.unit === 'cm' ? inches * 2.54 : inches; const r = Math.round(v * 10) / 10; return (r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)); }
+
+  // Separate horizontal (x) and vertical (y) pixels-per-inch — a wall photo's
+  // width and height are rarely captured at identical scale (lens/perspective),
+  // so the width estimate feeds ppiX and the height estimate feeds ppiY.
+  getPpiXY() {
+    const { disp, wall, wallHeightIn, wallWidthIn } = this.state;
+    if (!disp.w) return { x: 0, y: 0 };
+    let x = wallWidthIn > 0 ? (wall.right - wall.left) * disp.w / wallWidthIn : 0;
+    let y = wallHeightIn > 0 ? (wall.bottom - wall.top) * disp.h / wallHeightIn : 0;
+    // if only one axis known, fall back to it for the other rather than 0
+    if (!x && y) x = y; if (!y && x) y = x;
+    return { x, y };
+  }
+  getPpi() { const { x, y } = this.getPpiXY(); return (x + y) / 2; }
+
+  frac(e, el) { const r = el.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; }
+
+  // piece geometry — uses independent x/y scale
+  sizeFrac(p) { const { disp } = this.state; const { x: ppiX, y: ppiY } = this.getPpiXY(); if (p.mode === 'frac') return { w: p.fw, h: p.fh }; return { w: p.wIn * ppiX / disp.w, h: p.hIn * ppiY / disp.h }; }
+  pieceInches(p) { const { disp } = this.state; const { x: ppiX, y: ppiY } = this.getPpiXY(); if (p.mode === 'in') return { w: p.wIn, h: p.hIn }; if (ppiX > 0 && ppiY > 0) return { w: p.fw * disp.w / ppiX, h: p.fh * disp.h / ppiY }; return null; }
+
+  // ---- calibration ----
+  onWallHeight(e) { const s = e.target.value; const n = parseFloat(s); this.setState({ wallHeightStr: s, wallHeightIn: n > 0 ? (this.state.unit === 'cm' ? n / 2.54 : n) : 0 }); }
+  onWallWidth(e) { const s = e.target.value; const n = parseFloat(s); this.setState({ wallWidthStr: s, wallWidthIn: n > 0 ? (this.state.unit === 'cm' ? n / 2.54 : n) : 0 }); }
+
+  switchUnit(u) {
+    if (u === this.state.unit) return;
+    const r1 = (x) => { const v = Math.round(x * 10) / 10; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)); };
+    const conv = (inch) => u === 'cm' ? inch * 2.54 : inch;
+    const patch = {
+      unit: u,
+      rectW: r1(conv(this.toIn(this.state.rectW))), rectH: r1(conv(this.toIn(this.state.rectH))),
+      wallHeightStr: this.state.wallHeightIn ? r1(conv(this.state.wallHeightIn)) : '',
+      wallWidthStr: this.state.wallWidthIn ? r1(conv(this.state.wallWidthIn)) : '',
+    };
+    if (this.state.crop) { const back = this.state.unit === 'cm' ? 2.54 : 1; patch.crop = { ...this.state.crop, wStr: r1(conv(parseFloat(this.state.crop.wStr) / back)), hStr: r1(conv(parseFloat(this.state.crop.hStr) / back)) }; }
+    this.setState(patch);
+  }
+  onUnitIn() { this.switchUnit('in'); }
+  onUnitCm() { this.switchUnit('cm'); }
+
+  // ---- pieces ----
+  centeredPos(wf, hf) { return { fx: Math.max(0, 0.5 - wf / 2), fy: Math.max(0, 0.4 - hf / 2) }; }
+  onAddRect() {
+    const { x: ppiX, y: ppiY } = this.getPpiXY(); if (ppiX <= 0 || ppiY <= 0) return;
+    const wIn = this.toIn(this.state.rectW), hIn = this.toIn(this.state.rectH); if (wIn <= 0 || hIn <= 0) return;
+    const disp = this.state.disp; const pos = this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h);
+    const id = 'p' + Date.now();
+    this.pushHistory();
+    this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'rect', mode: 'in', color: s.rectColor, wIn, hIn, ...pos }], selectedIds: [id] }));
+  }
+  onRectW(e) { this.setState({ rectW: e.target.value }); }
+  onRectH(e) { this.setState({ rectH: e.target.value }); }
+  pickColor(c) { this.setState({ rectColor: c }); const ids = this.state.selectedIds; if (ids.length) this.setState(s => ({ pieces: s.pieces.map(p => ids.includes(p.id) && p.kind === 'rect' ? { ...p, color: c } : p) })); }
+  deletePiece(id, e) { if (e) e.stopPropagation(); this.pushHistory(); this.setState(s => ({ pieces: s.pieces.filter(p => p.id !== id), selectedIds: s.selectedIds.filter(x => x !== id) })); }
+  deleteSelected() { if (!this.state.selectedIds.length) return; this.pushHistory(); this.setState(s => ({ pieces: s.pieces.filter(p => !s.selectedIds.includes(p.id)), selectedIds: [] })); }
+  rowSelect(id, e) { const sh = e && e.shiftKey; this.setState(s => { let sel = s.selectedIds.slice(); if (sh) { sel = sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id]; } else sel = [id]; return { selectedIds: sel }; }); }
+  onToggleDims() { this.setState(s => ({ showDims: !s.showDims })); }
+  onToggleGuides() { this.setState(s => { const on = !(s.showSpacing || s.showAlignGrid); return { showSpacing: on, showAlignGrid: on }; }); }
+  onToggleWall() { this.setState(s => ({ showWall: !s.showWall })); }
+  selectAll(e) { e.target.select(); }
+
+  // small perpendicular ruler ticks along a guide/measurement line
+  tickMarks(x1, y1, x2, y2, opts) {
+    opts = opts || {}; const spacing = opts.spacing || 13, len = opts.len || 3, color = opts.color || '#1c1b19', opacity = opts.opacity != null ? opts.opacity : 0.4;
+    const dx = x2 - x1, dy = y2 - y1, length = Math.hypot(dx, dy); if (length < spacing) return [];
+    const ux = dx / length, uy = dy / length, px = -uy, py = ux; const n = Math.floor(length / spacing); const out = [];
+    for (let i = 1; i < n; i++) { const t = i * spacing, cx = x1 + ux * t, cy = y1 + uy * t; out.push(React.createElement('line', { key: (opts.keyPrefix || 't') + i, x1: cx - px * len, y1: cy - py * len, x2: cx + px * len, y2: cy + py * len, stroke: color, strokeWidth: 1, opacity })); }
+    return out;
+  }
+
+  // lines connecting aligned edges/centers across ALL pieces (persistent, not drag-only)
+  computeAlignGuides() {
+    const S = this.state; const disp = S.disp; if (!disp.w || S.pieces.length < 2) return [];
+    const thx = 5 / disp.w, thy = 5 / disp.h;
+    const boxes = S.pieces.map(p => { const sz = this.sizeFrac(p); return { l: p.fx, r: p.fx + sz.w, c: p.fx + sz.w / 2, t: p.fy, b: p.fy + sz.h, m: p.fy + sz.h / 2 }; });
+    const lines = [];
+    const groupAxis = (getter, th, isX) => {
+      const vals = boxes.map(getter);
+      const used = new Array(vals.length).fill(false);
+      for (let i = 0; i < vals.length; i++) {
+        if (used[i]) continue;
+        const group = [i];
+        for (let j = i + 1; j < vals.length; j++) { if (!used[j] && Math.abs(vals[j] - vals[i]) < th) group.push(j); }
+        if (group.length > 1) { group.forEach(k => used[k] = true);
+          const avg = group.reduce((a, k) => a + vals[k], 0) / group.length;
+          lines.push(isX ? { x1: avg * disp.w, y1: 0, x2: avg * disp.w, y2: disp.h } : { x1: 0, y1: avg * disp.h, x2: disp.w, y2: avg * disp.h });
+        }
+      }
+    };
+    groupAxis(b => b.l, thx, true); groupAxis(b => b.c, thx, true); groupAxis(b => b.r, thx, true);
+    groupAxis(b => b.t, thy, false); groupAxis(b => b.m, thy, false); groupAxis(b => b.b, thy, false);
+    return lines;
+  }
+
+  // While dragging: measure the gap to the nearest neighbour in each direction and
+  // highlight the connecting segment whenever the moving box's edge/center lines
+  // up with another piece's edge/center. Works on the union box of the whole
+  // selection so a dragged group behaves like one piece.
+  computeMoveGuides(groupIds) {
+    const S = this.state; const disp = S.disp; const { x: ppiX, y: ppiY } = this.getPpiXY();
+    if (!disp.w || !ppiX || !ppiY) return { aligns: [], dists: [] };
+    const box = (p) => { const s = this.sizeFrac(p); const l = p.fx * disp.w, t = p.fy * disp.h, r = (p.fx + s.w) * disp.w, b = (p.fy + s.h) * disp.h; return { l, t, r, b, cx: (l + r) / 2, cy: (t + b) / 2 }; };
+    const grp = S.pieces.filter(p => groupIds.includes(p.id)).map(box);
+    if (!grp.length) return { aligns: [], dists: [] };
+    const B = { l: Math.min(...grp.map(g => g.l)), t: Math.min(...grp.map(g => g.t)), r: Math.max(...grp.map(g => g.r)), b: Math.max(...grp.map(g => g.b)) };
+    B.cx = (B.l + B.r) / 2; B.cy = (B.t + B.b) / 2;
+    const others = S.pieces.filter(o => !groupIds.includes(o.id)).map(box);
+    const th = 3;
+    const aligns = [];
+    others.forEach(A => {
+      [[B.l, A.l], [B.cx, A.cx], [B.r, A.r]].forEach(([bv, av]) => { if (Math.abs(bv - av) < th) aligns.push({ x1: av, y1: Math.min(B.t, A.t), x2: av, y2: Math.max(B.b, A.b) }); });
+      [[B.t, A.t], [B.cy, A.cy], [B.b, A.b]].forEach(([bv, av]) => { if (Math.abs(bv - av) < th) aligns.push({ x1: Math.min(B.l, A.l), y1: av, x2: Math.max(B.r, A.r), y2: av }); });
+    });
+    // wall middle: highlight when the box center lines up with the wall's center axis
+    const W = S.wall; const wcx = (W.left + W.right) / 2 * disp.w, wcy = (W.top + W.bottom) / 2 * disp.h;
+    if (Math.abs(B.cx - wcx) < th) aligns.push({ x1: wcx, y1: W.top * disp.h, x2: wcx, y2: W.bottom * disp.h });
+    if (Math.abs(B.cy - wcy) < th) aligns.push({ x1: W.left * disp.w, y1: wcy, x2: W.right * disp.w, y2: wcy });
+    // nearest neighbour in each of the 4 directions, among pieces that overlap the perpendicular band
+    let nR = null, nL = null, nD = null, nU = null;
+    others.forEach(A => {
+      const vOverlap = B.t < A.b && A.t < B.b;
+      if (vOverlap) {
+        if (A.l >= B.r - 0.5) { const gap = A.l - B.r; if (gap >= 0 && (!nR || gap < nR.gap)) nR = { A, gap }; }
+        if (A.r <= B.l + 0.5) { const gap = B.l - A.r; if (gap >= 0 && (!nL || gap < nL.gap)) nL = { A, gap }; }
+      }
+      const hOverlap = B.l < A.r && A.l < B.r;
+      if (hOverlap) {
+        if (A.t >= B.b - 0.5) { const gap = A.t - B.b; if (gap >= 0 && (!nD || gap < nD.gap)) nD = { A, gap }; }
+        if (A.b <= B.t + 0.5) { const gap = B.t - A.b; if (gap >= 0 && (!nU || gap < nU.gap)) nU = { A, gap }; }
+      }
+    });
+    const dists = [];
+    if (nR) { const y = (Math.max(B.t, nR.A.t) + Math.min(B.b, nR.A.b)) / 2; dists.push({ x1: B.r, y1: y, x2: nR.A.l, y2: y, mx: (B.r + nR.A.l) / 2, my: y, val: nR.gap / ppiX, horiz: true }); }
+    if (nL) { const y = (Math.max(B.t, nL.A.t) + Math.min(B.b, nL.A.b)) / 2; dists.push({ x1: nL.A.r, y1: y, x2: B.l, y2: y, mx: (nL.A.r + B.l) / 2, my: y, val: nL.gap / ppiX, horiz: true }); }
+    if (nD) { const x = (Math.max(B.l, nD.A.l) + Math.min(B.r, nD.A.r)) / 2; dists.push({ x1: x, y1: B.b, x2: x, y2: nD.A.t, mx: x, my: (B.b + nD.A.t) / 2, val: nD.gap / ppiY, horiz: false }); }
+    if (nU) { const x = (Math.max(B.l, nU.A.l) + Math.min(B.r, nU.A.r)) / 2; dists.push({ x1: x, y1: nU.A.b, x2: x, y2: B.t, mx: x, my: (nU.A.b + B.t) / 2, val: nU.gap / ppiY, horiz: false }); }
+    return { aligns, dists };
+  }
+
+  duplicateSelected() {
+    const sel = this.state.pieces.filter(p => this.state.selectedIds.includes(p.id));
+    if (!sel.length) return; this.pushHistory(); const now = Date.now(); const nids = [];
+    const copies = sel.map((p, i) => { const id = 'p' + now + '_' + i; nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
+    this.setState(s => ({ pieces: [...s.pieces, ...copies], selectedIds: nids }));
+  }
+  copySelected() { this.clip = this.state.pieces.filter(p => this.state.selectedIds.includes(p.id)).map(p => ({ ...p })); }
+  paste() {
+    if (!this.clip || !this.clip.length) return; this.pushHistory(); const now = Date.now(); const nids = [];
+    const copies = this.clip.map((p, i) => { const id = 'p' + now + '_' + i; nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
+    this.setState(s => ({ pieces: [...s.pieces, ...copies], selectedIds: nids }));
+  }
+
+  // align / distribute
+  boxesOf(ids) { return this.state.pieces.filter(p => ids.includes(p.id)).map(p => { const sz = this.sizeFrac(p); return { id: p.id, x: p.fx, y: p.fy, w: sz.w, h: sz.h }; }); }
+  applyPos(map) { this.setState(s => ({ pieces: s.pieces.map(p => map[p.id] ? { ...p, ...map[p.id] } : p) })); }
+  align(kind) {
+    const bx = this.boxesOf(this.state.selectedIds); if (bx.length < 2) return; this.pushHistory(); const m = {};
+    if (kind === 'l') { const v = Math.min(...bx.map(b => b.x)); bx.forEach(b => m[b.id] = { fx: v }); }
+    if (kind === 'r') { const v = Math.max(...bx.map(b => b.x + b.w)); bx.forEach(b => m[b.id] = { fx: v - b.w }); }
+    if (kind === 'ch') { const v = bx.reduce((a, b) => a + b.x + b.w / 2, 0) / bx.length; bx.forEach(b => m[b.id] = { fx: v - b.w / 2 }); }
+    if (kind === 't') { const v = Math.min(...bx.map(b => b.y)); bx.forEach(b => m[b.id] = { fy: v }); }
+    if (kind === 'b') { const v = Math.max(...bx.map(b => b.y + b.h)); bx.forEach(b => m[b.id] = { fy: v - b.h }); }
+    if (kind === 'cv') { const v = bx.reduce((a, b) => a + b.y + b.h / 2, 0) / bx.length; bx.forEach(b => m[b.id] = { fy: v - b.h / 2 }); }
+    this.applyPos(m);
+  }
+  distribute(axis) {
+    const bx = this.boxesOf(this.state.selectedIds); if (bx.length < 3) return; this.pushHistory(); const m = {};
+    if (axis === 'h') { bx.sort((a, b) => a.x - b.x); const totalW = bx.reduce((a, b) => a + b.w, 0); const span = (bx[bx.length - 1].x + bx[bx.length - 1].w) - bx[0].x; const gap = (span - totalW) / (bx.length - 1); let cx = bx[0].x; bx.forEach(b => { m[b.id] = { fx: cx }; cx += b.w + gap; }); }
+    else { bx.sort((a, b) => a.y - b.y); const totalH = bx.reduce((a, b) => a + b.h, 0); const span = (bx[bx.length - 1].y + bx[bx.length - 1].h) - bx[0].y; const gap = (span - totalH) / (bx.length - 1); let cy = bx[0].y; bx.forEach(b => { m[b.id] = { fy: cy }; cy += b.h + gap; }); }
+    this.applyPos(m);
+  }
+
+  // ---- lift existing art ----
+  onLift() { const { x, y } = this.getPpiXY(); if (x <= 0 || y <= 0) return; this.setState(s => ({ liftMode: !s.liftMode, brushMode: false, showRectOptions: false })); }
+  onToggleRectOptions() { this.setState(s => ({ showRectOptions: !s.showRectOptions, liftMode: false, brushMode: false })); }
+  onToggleLock() { this.setState(s => ({ wallLocked: !s.wallLocked })); }
+
+  // ---- touch-up brush: paints strokes whose color interpolates from the ring of wall texture around each stamp ----
+  onToggleBrush() {
+    if (!this.wctx) this.buildWallCanvas();
+    if (!this.wctx) return;
+    this.setState(s => ({ brushMode: !s.brushMode, liftMode: false, showRectOptions: false }));
+  }
+  onBrushSize(e) { this.setState({ brushSize: parseFloat(e.target.value) }); }
+  onClearBrush() {
+    const cv = this.brushRef.current; if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    if (this.brushNat) this.brushNat.getContext('2d').clearRect(0, 0, this.brushNat.width, this.brushNat.height);
+    this._brushDirty = true;
+  }
+  paintStamp(fx, fy) {
+    const canvas = this.brushRef.current; if (!canvas || !this.wctx || !this.wnat) return;
+    const disp = this.state.disp; if (!disp.w) return;
+    this._brushDirty = true;
+    const rDisp = Math.max(3, this.state.brushSize * disp.w);
+    const cxDisp = fx * disp.w, cyDisp = fy * disp.h;
+    const nat = this.wnat; const rNat = rDisp * (nat.w / disp.w) * 1.5;
+    const cxNat = fx * nat.w, cyNat = fy * nat.h;
+    const N = 8; const colors = []; let lastGood = '#d7d8dc';
+    for (let i = 0; i <= N; i++) {
+      const ang = (i / N) * Math.PI * 2;
+      const sx = Math.min(nat.w - 1, Math.max(0, Math.round(cxNat + Math.cos(ang) * rNat)));
+      const sy = Math.min(nat.h - 1, Math.max(0, Math.round(cyNat + Math.sin(ang) * rNat)));
+      try { const p = this.wctx.getImageData(sx, sy, 1, 1).data; lastGood = 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')'; } catch (e) {}
+      colors.push(lastGood);
+    }
+    const size = Math.max(2, Math.round(rDisp * 2));
+    const tmp = document.createElement('canvas'); tmp.width = size; tmp.height = size;
+    const tctx = tmp.getContext('2d');
+    try {
+      const grad = tctx.createConicGradient(0, size / 2, size / 2);
+      colors.forEach((c, i) => grad.addColorStop(i / N, c));
+      tctx.fillStyle = grad; tctx.fillRect(0, 0, size, size);
+    } catch (e) { tctx.fillStyle = colors[0]; tctx.fillRect(0, 0, size, size); }
+    const rg = tctx.createRadialGradient(size / 2, size / 2, size * 0.55, size / 2, size / 2, size / 2);
+    rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    tctx.globalCompositeOperation = 'destination-in';
+    tctx.fillStyle = rg; tctx.fillRect(0, 0, size, size);
+    tctx.globalCompositeOperation = 'source-over';
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(tmp, cxDisp - size / 2, cyDisp - size / 2);
+    // Also bake this stamp into the sampling canvas (wctx) — so it becomes part of
+    // the "current view" future strokes/lifts sample from — AND into the natural-res
+    // stroke buffer (brushNat) so strokes survive resizes and can be saved in configs.
+    try {
+      const natSize = size * (nat.w / disp.w);
+      this.wctx.drawImage(tmp, cxNat - natSize / 2, cyNat - natSize / 2, natSize, natSize);
+      if (this.brushNat) this.brushNat.getContext('2d').drawImage(tmp, cxNat - natSize / 2, cyNat - natSize / 2, natSize, natSize);
+    } catch (e) {}
+  }
+  createLift(rf) {
+    if (rf.w < 0.02 || rf.h < 0.02) { this.setState({ liftMode: false, draft: null }); return; }
+    this.pushHistory();
+    let url = null;
+    try {
+      const nat = this.wnat; const sx = rf.x * nat.w, sy = rf.y * nat.h, sw = rf.w * nat.w, sh = rf.h * nat.h;
+      const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(sw)); cv.height = Math.max(1, Math.round(sh));
+      cv.getContext('2d').drawImage(this.wctx.canvas, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+      url = cv.toDataURL('image/png');
+    } catch (e) { url = null; }
+    const fill = this.makeGradientFill(rf);
+    const pid = 'p' + Date.now(), ptid = 'pt' + Date.now();
+    const fillSrc = url || fill.url;
+    const piece = fillSrc ? { id: pid, kind: 'image', mode: 'frac', src: fillSrc, fw: rf.w, fh: rf.h, fx: rf.x, fy: rf.y }
+                          : { id: pid, kind: 'rect', mode: 'frac', color: fill.avgColor, fw: rf.w, fh: rf.h, fx: rf.x, fy: rf.y };
+    const patch = { id: ptid, fx: rf.x, fy: rf.y, fw: rf.w, fh: rf.h, src: fill.url, color: fill.avgColor };
+    this.setState(s => ({ pieces: [...s.pieces, piece], patches: [...s.patches, patch], selectedIds: [pid], liftMode: false, draft: null }));
+    if (url) { const inch = this.pieceInches(piece); this.addToLibrary({ id: 'lib' + Date.now() + '_l', src: url, wIn: inch ? inch.w : null, hIn: inch ? inch.h : null, name: 'Lifted art' }); }
+    // bake the interpolated fill into the sampled wall canvas itself, so the touch-up
+    // brush (which reads from this canvas) blends against the CLEANED background —
+    // not the original photo, which still has the removed artwork's pixels in it.
+    try {
+      if (this.wctx && this.wnat && fill.canvas) {
+        const nat = this.wnat;
+        this.wctx.drawImage(fill.canvas, Math.round(rf.x * nat.w), Math.round(rf.y * nat.h), Math.round(rf.w * nat.w), Math.round(rf.h * nat.h));
+      }
+    } catch (e) {}
+  }
+
+  // ---- upload / crop ----
+  readImage(file, cb) {
+    const rd = new FileReader();
+    rd.onload = () => { const img = new Image(); img.onload = () => cb(img, rd.result, false); img.onerror = () => cb(null, null, true); img.src = rd.result; };
+    rd.onerror = () => cb(null, null, true);
+    rd.readAsDataURL(file);
+  }
+  onUpload(e) {
+    const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = '';
+    const heic = /heic|heif/i.test(f.type) || /\.hei[cf]$/i.test(f.name || '');
+    this.setState({ uploadError: null });
+    this.readImage(f, (img, url, failed) => {
+      if (failed || !img) { this.setState({ uploadError: heic ? 'HEIC photos can’t be read by the browser. Export/convert it to JPG or PNG (Photos → Share → Export as JPEG) and upload again.' : 'Could not read that file — try a JPG or PNG.' }); return; }
+      this.cropImg = img;
+      // default crop = whole image (outer edges); default W/H = the standing square default (e.g. 10x10)
+      this.setState({ crop: { src: url, natW: img.naturalWidth, natH: img.naturalHeight, box: { x: 0, y: 0, w: 1, h: 1 }, wStr: this.state.rectW, hStr: this.state.rectH } });
+    });
+  }
+  onReplaceWall(e) { const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = ''; this.readImage(f, (img, url) => { this.switchWall(url); }); }
+  // keep the last 3 wall photos used (including the current one) so you can flip back without re-uploading
+  switchWall(src) {
+    // a freshly chosen photo gets a fresh (empty) brush layer and a fresh
+    // auto-guess of its bounds; keep the auto-save layer in step.
+    this._suppressGuessFor = null;
+    this._brushDirty = true;
+    this.setState(s => {
+      const hist = [src, ...s.wallHistory.filter(x => x !== src)].slice(0, 3);
+      return { wallSrc: src, wallHistory: hist, liftMode: false, brushMode: false, pieces: [], patches: [], selectedIds: [] };
+    });
+    setTimeout(() => { this.measure(); this.buildWallCanvas(); }, 40);
+  }
+  onCropW(e) { this.setState(s => ({ crop: { ...s.crop, wStr: e.target.value } })); }
+  onCropH(e) { this.setState(s => ({ crop: { ...s.crop, hStr: e.target.value } })); }
+  onCropBoxDown(e) { e.stopPropagation(); this.active = { type: 'crop-move', sx: e.clientX, sy: e.clientY, box: { ...this.state.crop.box } }; }
+  cropCorner(corner, e) { e.stopPropagation(); this.active = { type: 'crop-resize', corner, box: { ...this.state.crop.box } }; }
+  onCropCancel() { this.setState({ crop: null }); }
+  onCropConfirm() {
+    const c = this.state.crop; if (!c || !this.cropImg) return;
+    const sx = c.box.x * c.natW, sy = c.box.y * c.natH, sw = c.box.w * c.natW, sh = c.box.h * c.natH;
+    const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(sw)); cv.height = Math.max(1, Math.round(sh));
+    cv.getContext('2d').drawImage(this.cropImg, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+    const url = cv.toDataURL('image/png');
+    const wIn = this.toIn(c.wStr), hIn = this.toIn(c.hStr); const { x: ppiX, y: ppiY } = this.getPpiXY(); const disp = this.state.disp;
+    const pos = (ppiX > 0 && ppiY > 0) ? this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h) : { fx: 0.3, fy: 0.3 };
+    const id = 'p' + Date.now();
+    this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'image', mode: 'in', src: url, wIn, hIn, ...pos }], selectedIds: [id], crop: null }));
+    this.addToLibrary({ id: 'lib' + Date.now(), src: url, wIn, hIn, name: 'Artwork' });
+  }
+
+  // ---- library ----
+  saveLibraryToStorage() { try { localStorage.setItem('artPlacerLibrary', JSON.stringify(this.state.library)); } catch (e) {} }
+  addToLibrary(item) { this.setState(s => ({ library: [...s.library, item] }), () => this.saveLibraryToStorage()); }
+  deleteFromLibrary(id, e) { if (e) e.stopPropagation(); this.setState(s => ({ library: s.library.filter(x => x.id !== id) }), () => this.saveLibraryToStorage()); }
+  startRenameLib(id, name, e) { if (e) e.stopPropagation(); this.setState({ editingLibId: id, editingLibName: name }); }
+  onEditingLibName(e) { this.setState({ editingLibName: e.target.value }); }
+  commitRenameLib() {
+    const id = this.state.editingLibId; if (!id) return;
+    const name = (this.state.editingLibName || '').trim() || 'Untitled';
+    this.setState(s => ({ library: s.library.map(x => x.id === id ? { ...x, name } : x), editingLibId: null }), () => this.saveLibraryToStorage());
+  }
+  onRenameLibKey(e) { if (e.key === 'Enter') { e.preventDefault(); this.commitRenameLib(); } else if (e.key === 'Escape') { e.stopPropagation(); this.setState({ editingLibId: null }); } }
+  placeFromLibrary(item) {
+    const disp = this.state.disp; const { x: ppiX, y: ppiY } = this.getPpiXY();
+    let wIn = item.wIn, hIn = item.hIn;
+    if (!wIn || !hIn) { wIn = this.toIn(this.state.rectW); hIn = this.toIn(this.state.rectH); }
+    const pos = (ppiX > 0 && ppiY > 0) ? this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h) : { fx: 0.3, fy: 0.3 };
+    const id = 'p' + Date.now();
+    this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'image', mode: 'in', src: item.src, wIn, hIn, ...pos }], selectedIds: [id] }));
+  }
+
+  // ---- save / load config ----
+  saveConfig() {
+    const S = this.state;
+    let brush = null;
+    try { if (this.brushNat) brush = this.brushNat.toDataURL('image/png'); } catch (e) {}
+    const data = { version: 3, unit: S.unit, wall: S.wall, wallHeightIn: S.wallHeightIn, wallWidthIn: S.wallWidthIn, pieces: S.pieces, patches: S.patches, wallSrc: S.wallSrc, brush };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'art-placer-config.json'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  onLoadConfig(e) {
+    const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = '';
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const data = JSON.parse(rd.result);
+        const u = data.unit || this.state.unit;
+        const r1 = (x) => { const v = Math.round(x * 10) / 10; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)); };
+        const conv = (inch) => u === 'cm' ? inch * 2.54 : inch;
+        const patch = {
+          unit: u,
+          wall: data.wall || this.state.wall,
+          wallHeightIn: data.wallHeightIn || 0, wallHeightStr: data.wallHeightIn ? r1(conv(data.wallHeightIn)) : '',
+          wallWidthIn: data.wallWidthIn || 0, wallWidthStr: data.wallWidthIn ? r1(conv(data.wallWidthIn)) : '',
+          pieces: data.pieces || [], patches: data.patches || [], selectedIds: [],
+        };
+        // keep the auto-save layer in sync so it doesn't overwrite what we just loaded
+        if (data.wall) this._suppressGuessFor = data.wallSrc || this.state.wallSrc;
+        if (data.brush) { this.pendingBrush = data.brush; this._brushSnapshot = data.brush; this._brushDirty = false; }
+        else { this._brushDirty = true; } // re-serialize from the actual brush canvas on next save
+        if (data.wallSrc && data.wallSrc !== this.state.wallSrc) {
+          patch.wallSrc = data.wallSrc;
+          patch.wallHistory = [data.wallSrc, ...this.state.wallHistory.filter(x => x !== data.wallSrc)].slice(0, 3);
+          this.wctx = null; this.brushNat = null;
+          setTimeout(() => { this.measure(); this.buildWallCanvas(); }, 60);
+        } else if (data.brush) {
+          setTimeout(() => this.buildWallCanvas(), 30);
+        }
+        this.history = [];
+        this.setState(patch);
+      } catch (err) { this.setState({ uploadError: 'Could not read that config file.' }); }
+    };
+    rd.readAsText(f);
+  }
+
+  // ---- stage pointer (draw modes) ----
+  onDrawStart(e) {
+    e.stopPropagation();
+    const p = this.frac(e, this.wrapRef.current);
+    if (this.state.liftMode) { this.setState({ draft: { a: p, b: p } }); this.active = { type: 'lift' }; }
+    else if (this.state.brushMode) { this.paintStamp(p.x, p.y); this.setState(s => ({ brushStrokeCount: s.brushStrokeCount + 1 })); this.active = { type: 'brush', last: p }; }
+  }
+  onCatcherMove(e) { if (this.state.brushMode) this.setState({ brushCursor: this.frac(e, this.wrapRef.current) }); }
+  onCatcherLeave() { if (this.state.brushMode) this.setState({ brushCursor: null }); }
+  onWrapDown() { if (!this.state.liftMode && !this.state.brushMode) this.setState({ selectedIds: [] }); }
+  onWrapDoubleClick(e) {
+    if (e.target !== this.wrapRef.current && e.target !== this.imgRef.current) return;
+    const s = this.state; const anyOn = s.showDims || s.showSpacing || s.showWall || s.showAlignGrid;
+    this.setState({ showDims: !anyOn, showSpacing: !anyOn, showWall: !anyOn, showAlignGrid: !anyOn });
+  }
+
+  pieceDown(id, e) {
+    e.stopPropagation();
+    const sh = e.shiftKey;
+    let sel = this.state.selectedIds.slice();
+    if (sh) sel = sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id];
+    else if (!sel.includes(id)) sel = [id];
+    this.setState({ selectedIds: sel });
+    const group = sel.map(pid => { const pp = this.state.pieces.find(x => x.id === pid); return { id: pid, fx: pp.fx, fy: pp.fy }; });
+    this.pushHistory();
+    this.active = { type: 'move', primary: id, sx: e.clientX, sy: e.clientY, group };
+  }
+  resizeDown(id, handle, e) { e.stopPropagation(); const p = this.state.pieces.find(x => x.id === id); const sz = this.sizeFrac(p); this.pushHistory(); this.setState({ selectedIds: [id] }); this.active = { type: 'resize', id, handle, start: { fx: p.fx, fy: p.fy, wf: sz.w, hf: sz.h } }; }
+
+  computeSnap(prim, group, dxf, dyf) {
+    // primary piece target position; snap edges/centers to other pieces + wall
+    const disp = this.state.disp; const thx = 7 / disp.w, thy = 7 / disp.h;
+    const gp = group.find(g => g.id === prim); const p = this.state.pieces.find(x => x.id === prim); const sz = this.sizeFrac(p);
+    let nx = gp.fx + dxf, ny = gp.fy + dyf; const lines = [];
+    const others = this.state.pieces.filter(o => !group.some(g => g.id === o.id)).map(o => { const s = this.sizeFrac(o); return { l: o.fx, r: o.fx + s.w, c: o.fx + s.w / 2, t: o.fy, b: o.fy + s.h, m: o.fy + s.h / 2 }; });
+    const W = this.state.wall;
+    const xt = []; others.forEach(o => { xt.push(o.l, o.c, o.r); }); xt.push(W.left, (W.left + W.right) / 2, W.right);
+    const yt = []; others.forEach(o => { yt.push(o.t, o.m, o.b); }); yt.push(W.top, W.bottom, (W.top + W.bottom) / 2);
+    const myx = [nx, nx + sz.w / 2, nx + sz.w]; let bestx = null;
+    myx.forEach((mv, k) => xt.forEach(t => { const d = Math.abs(mv - t); if (d < thx && (!bestx || d < bestx.d)) bestx = { d, off: t - mv, x: t }; }));
+    if (bestx) { nx += bestx.off; lines.push({ x1: bestx.x * disp.w, y1: 0, x2: bestx.x * disp.w, y2: disp.h, v: 1 }); }
+    const myy = [ny, ny + sz.h / 2, ny + sz.h]; let besty = null;
+    myy.forEach((mv, k) => yt.forEach(t => { const d = Math.abs(mv - t); if (d < thy && (!besty || d < besty.d)) besty = { d, off: t - mv, y: t }; }));
+    if (besty) { ny += besty.off; lines.push({ x1: 0, y1: besty.y * disp.h, x2: disp.w, y2: besty.y * disp.h, v: 0 }); }
+    return { dx: nx - gp.fx, dy: ny - gp.fy, lines };
+  }
+
+  handleMove(e) {
+    const a = this.active; if (!a) return;
+    const disp = this.state.disp;
+    if (a.type === 'move') {
+      let dxf = (e.clientX - a.sx) / disp.w, dyf = (e.clientY - a.sy) / disp.h;
+      const snap = e.altKey ? { dx: dxf, dy: dyf, lines: [] } : this.computeSnap(a.primary, a.group, dxf, dyf);
+      dxf = snap.dx; dyf = snap.dy;
+      const byId = {}; a.group.forEach(g => { const p = this.state.pieces.find(x => x.id === g.id); const sz = this.sizeFrac(p); byId[g.id] = { fx: Math.min(Math.max(g.fx + dxf, 0), Math.max(0, 1 - sz.w)), fy: Math.min(Math.max(g.fy + dyf, 0), Math.max(0, 1 - sz.h)) }; });
+      this.setState(s => ({ pieces: s.pieces.map(p => byId[p.id] ? { ...p, ...byId[p.id] } : p), snap: snap.lines }));
+    } else if (a.type === 'resize') {
+      const p2 = this.frac(e, this.wrapRef.current); const st = a.start; const min = 10 / disp.w, minY = 10 / disp.h;
+      const right = st.fx + st.wf, bottom = st.fy + st.hf; let fx = st.fx, fy = st.fy, wf = st.wf, hf = st.hf; const H = a.handle;
+      if (H.indexOf('w') >= 0) { fx = Math.min(p2.x, right - min); wf = right - fx; }
+      if (H.indexOf('e') >= 0) { wf = Math.max(min, p2.x - fx); }
+      if (H.indexOf('n') >= 0) { fy = Math.min(p2.y, bottom - minY); hf = bottom - fy; }
+      if (H.indexOf('s') >= 0) { hf = Math.max(minY, p2.y - fy); }
+      const p = this.state.pieces.find(x => x.id === a.id); const { x: ppiX, y: ppiY } = this.getPpiXY();
+      let patch = { fx, fy };
+      if (p.mode === 'frac') { patch.fw = wf; patch.fh = hf; } else { patch.wIn = wf * disp.w / ppiX; patch.hIn = hf * disp.h / ppiY; }
+      this.setState(s => ({ pieces: s.pieces.map(x => x.id === a.id ? { ...x, ...patch } : x) }));
+    } else if (a.type === 'lift') {
+      this.setState(s => ({ draft: { ...s.draft, b: this.frac(e, this.wrapRef.current) } }));
+    } else if (a.type === 'brush') {
+      const p = this.frac(e, this.wrapRef.current); const dispw = Math.max(1, disp.w);
+      const distFrac = Math.hypot(p.x - a.last.x, p.y - a.last.y); const stepFrac = 4 / dispw;
+      if (distFrac > stepFrac) {
+        const steps = Math.ceil(distFrac / stepFrac);
+        for (let i = 1; i <= steps; i++) { const t = i / steps; this.paintStamp(a.last.x + (p.x - a.last.x) * t, a.last.y + (p.y - a.last.y) * t); }
+        a.last = p;
+        this.setState(s => ({ brushStrokeCount: s.brushStrokeCount + 1, brushCursor: p }));
+      }
+    } else if (a.type === 'wall') {
+      const p = this.frac(e, this.wrapRef.current); const w = { ...this.state.wall };
+      if (a.edge === 'top') w.top = Math.min(p.y, w.bottom - 0.02);
+      if (a.edge === 'bottom') w.bottom = Math.max(p.y, w.top + 0.02);
+      if (a.edge === 'left') w.left = Math.min(p.x, w.right - 0.02);
+      if (a.edge === 'right') w.right = Math.max(p.x, w.left + 0.02);
+      this.setState({ wall: w });
+    } else if (a.type === 'crop-move') {
+      const el = this.cropRef.current; if (!el) return; const r = el.getBoundingClientRect();
+      const dx = (e.clientX - a.sx) / r.width, dy = (e.clientY - a.sy) / r.height; const b = a.box;
+      this.setState(s => ({ crop: { ...s.crop, box: { ...s.crop.box, x: Math.min(Math.max(b.x + dx, 0), 1 - b.w), y: Math.min(Math.max(b.y + dy, 0), 1 - b.h) } } }));
+    } else if (a.type === 'crop-resize') {
+      const p = this.frac(e, this.cropRef.current); const b = a.box; const co = a.corner; const right = b.x + b.w, bottom = b.y + b.h; const nb = { ...b };
+      if (co[0] === 'n') { const ny = Math.min(p.y, bottom - 0.05); nb.y = ny; nb.h = bottom - ny; } else { nb.h = Math.min(Math.max(p.y - b.y, 0.05), 1 - b.y); }
+      if (co[1] === 'w') { const nx = Math.min(p.x, right - 0.05); nb.x = nx; nb.w = right - nx; } else { nb.w = Math.min(Math.max(p.x - b.x, 0.05), 1 - b.x); }
+      this.setState(s => ({ crop: { ...s.crop, box: nb } }));
+    }
+  }
+  handleUp() {
+    const a = this.active; this.active = null;
+    if (!a) return;
+    if (a.type === 'lift') { const d = this.state.draft; if (d) { const rf = { x: Math.min(d.a.x, d.b.x), y: Math.min(d.a.y, d.b.y), w: Math.abs(d.b.x - d.a.x), h: Math.abs(d.b.y - d.a.y) }; this.createLift(rf); } }
+    if (a.type === 'move') this.setState({ snap: [] });
+  }
+  handleKey(e) {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const mod = e.metaKey || e.ctrlKey;
+    if (e.key === 'Escape') { this.setState({ liftMode: false, brushMode: false, showRectOptions: false, selectedIds: [], draft: null }); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.state.selectedIds.length) { e.preventDefault(); this.deleteSelected(); return; }
+    if (mod && (e.key === 'c' || e.key === 'C')) { this.copySelected(); return; }
+    if (mod && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); this.paste(); return; }
+    if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); this.duplicateSelected(); return; }
+    if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.undo(); return; }
+    const arrows = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    if (arrows[e.key] && this.state.selectedIds.length) {
+      e.preventDefault();
+      const step = e.shiftKey ? 1 : 0.1;
+      const [dx, dy] = arrows[e.key];
+      this.nudgeSelected(dx * step, dy * step);
+    }
+  }
+  nudgeSelected(dxIn, dyIn) {
+    const { x: ppiX, y: ppiY } = this.getPpiXY(); if (ppiX <= 0 || ppiY <= 0) return;
+    // group rapid arrow presses into one undo step
+    const now = Date.now();
+    if (!this._lastNudge || now - this._lastNudge > 800) this.pushHistory();
+    this._lastNudge = now;
+    const disp = this.state.disp; const dxf = dxIn * ppiX / disp.w, dyf = dyIn * ppiY / disp.h;
+    const ids = this.state.selectedIds;
+    this.setState(s => ({ pieces: s.pieces.map(p => { if (!ids.includes(p.id)) return p; const sz = this.sizeFrac(p); return { ...p, fx: Math.min(Math.max(p.fx + dxf, 0), Math.max(0, 1 - sz.w)), fy: Math.min(Math.max(p.fy + dyf, 0), Math.max(0, 1 - sz.h)) }; }) }));
+  }
+
+  // ---- render ----
+  renderVals() {
+    const S = this.state; const acc = this.accent(); const disp = S.disp;
+    const { x: ppiX, y: ppiY } = this.getPpiXY(); const ppi = (ppiX + ppiY) / 2; const ready = ppiX > 0 && ppiY > 0;
+    const shadow = (this.props.pieceShadow ?? true) ? '0 8px 22px -8px rgba(0,0,0,0.42)' : 'none';
+    const single = S.selectedIds.length === 1 ? S.selectedIds[0] : null;
+
+    const pieces = S.pieces.map(p => {
+      const sz = this.sizeFrac(p); const wpx = sz.w * disp.w, hpx = sz.h * disp.h;
+      const sel = S.selectedIds.includes(p.id);
+      const inch = this.pieceInches(p);
+      const handles = (p.id === single) ? ['nw', 'ne', 'se', 'sw', 'n', 'e', 's', 'w'].map(H => {
+        const pos = { position: 'absolute', width: 12, height: 12, background: '#fff', border: '2px solid ' + acc, borderRadius: 2, zIndex: 30, touchAction: 'none' };
+        const map = { nw: { left: -6, top: -6, cursor: 'nwse-resize' }, ne: { right: -6, top: -6, cursor: 'nesw-resize' }, se: { right: -6, bottom: -6, cursor: 'nwse-resize' }, sw: { left: -6, bottom: -6, cursor: 'nesw-resize' }, n: { left: '50%', top: -6, marginLeft: -6, cursor: 'ns-resize' }, s: { left: '50%', bottom: -6, marginLeft: -6, cursor: 'ns-resize' }, e: { top: '50%', right: -6, marginTop: -6, cursor: 'ew-resize' }, w: { top: '50%', left: -6, marginTop: -6, cursor: 'ew-resize' } };
+        return { style: { ...pos, ...map[H] }, onDown: (e) => this.resizeDown(p.id, H, e) };
+      }) : [];
+      return {
+        id: p.id, isImage: p.kind === 'image', src: p.src, showLabel: S.showDims && !!inch,
+        label: inch ? (this.fmt(inch.w) + ' × ' + this.fmt(inch.h) + ' ' + S.unit) : '',
+        handles,
+        style: {
+          position: 'absolute', left: (p.fx * disp.w) + 'px', top: (p.fy * disp.h) + 'px', width: wpx + 'px', height: hpx + 'px',
+          background: p.kind === 'rect' ? p.color : 'transparent',
+          border: sel ? '2px solid ' + acc : '1px solid rgba(0,0,0,0.18)',
+          boxShadow: shadow, cursor: 'grab', touchAction: 'none', zIndex: sel ? 20 : 10, boxSizing: 'border-box',
+        },
+        onDown: (e) => this.pieceDown(p.id, e),
+      };
+    });
+
+    const patches = S.patches.map(pt => ({ style: pt.src ? {
+      position: 'absolute', left: (pt.fx * disp.w) + 'px', top: (pt.fy * disp.h) + 'px', width: (pt.fw * disp.w) + 'px', height: (pt.fh * disp.h) + 'px',
+      backgroundImage: 'url(' + pt.src + ')', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', zIndex: 5,
+    } : {
+      position: 'absolute', left: (pt.fx * disp.w) + 'px', top: (pt.fy * disp.h) + 'px', width: (pt.fw * disp.w) + 'px', height: (pt.fh * disp.h) + 'px', background: pt.color, zIndex: 5,
+    } }));
+
+    // guide layer (draft, snap lines, floor/wall annotations)
+    const gk = [];
+    if (disp.w) {
+      if (S.draft) { const d = S.draft; const x = Math.min(d.a.x, d.b.x) * disp.w, y = Math.min(d.a.y, d.b.y) * disp.h, w = Math.abs(d.b.x - d.a.x) * disp.w, h = Math.abs(d.b.y - d.a.y) * disp.h; gk.push(React.createElement('rect', { key: 'draft', x, y, width: w, height: h, fill: 'rgba(74,99,166,0.12)', stroke: acc, strokeWidth: 1.5, strokeDasharray: '5 4' })); }
+      if (S.showAlignGrid) this.computeAlignGuides().forEach((l, i) => { gk.push(React.createElement('line', { key: 'ag' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: acc, strokeWidth: 1, strokeDasharray: '1 5', opacity: 0.55 })); gk.push(...this.tickMarks(l.x1, l.y1, l.x2, l.y2, { color: acc, opacity: 0.35, spacing: 16, keyPrefix: 'agk' + i + '_' })); });
+      const selPieces = S.pieces.filter(p => S.selectedIds.includes(p.id));
+      if (S.showSpacing && selPieces.length && ready) {
+        // measure the selection's bounding box (a single piece, or the union box of a group) to the wall
+        const sboxes = selPieces.map(p => { const sz = this.sizeFrac(p); return { l: p.fx * disp.w, t: p.fy * disp.h, r: (p.fx + sz.w) * disp.w, b: (p.fy + sz.h) * disp.h }; });
+        const left = Math.min(...sboxes.map(b => b.l)), top = Math.min(...sboxes.map(b => b.t)), right = Math.max(...sboxes.map(b => b.r)), bottom = Math.max(...sboxes.map(b => b.b));
+        const cx = (left + right) / 2, cy = (top + bottom) / 2; const W = S.wall; const ceilPx = W.top * disp.h, floorPx = W.bottom * disp.h, lPx = W.left * disp.w, rPx = W.right * disp.w;
+        // Left + ceiling are the primary reference axes (how you'd actually measure
+        // a hang point on site) — drawn bolder/solid. Right + floor are secondary
+        // cross-checks, drawn lighter/thinner so the eye lands on the primary pair first.
+        // all four connecting lines are drawn uniformly — no primary/secondary emphasis
+        const gc = S.wallLocked ? '#4a4a4a' : acc;
+        const line = { stroke: gc, strokeWidth: 1.2, strokeDasharray: '4 4', opacity: 0.6 };
+        const Tp = (x, y, v) => React.createElement('text', { x, y, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, fontWeight: 500, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke', textAnchor: 'middle', opacity: 0.85 }, this.fmt(v) + ' ' + S.unit);
+        // outline the group's bounding box when measuring a multi-selection
+        if (selPieces.length > 1) gk.push(React.createElement('rect', { key: 'gbb', x: left, y: top, width: right - left, height: bottom - top, fill: 'none', stroke: gc, strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.7 }));
+        // ceiling
+        gk.push(React.createElement('line', { key: 'gc', x1: cx, y1: ceilPx, x2: cx, y2: top, ...line }));
+        gk.push(...this.tickMarks(cx, ceilPx, cx, top, { color: gc, opacity: 0.45, spacing: 10, keyPrefix: 'gck_' }));
+        gk.push(Tp(cx, (ceilPx + top) / 2 - 4, (top - ceilPx) / ppiY));
+        // left
+        gk.push(React.createElement('line', { key: 'gl', x1: lPx, y1: cy, x2: left, y2: cy, ...line }));
+        gk.push(...this.tickMarks(lPx, cy, left, cy, { color: gc, opacity: 0.45, spacing: 10, keyPrefix: 'glk_' }));
+        gk.push(Tp((lPx + left) / 2, cy - 8, (left - lPx) / ppiX));
+        // floor
+        gk.push(React.createElement('line', { key: 'gf', x1: cx, y1: bottom, x2: cx, y2: floorPx, ...line }));
+        gk.push(...this.tickMarks(cx, bottom, cx, floorPx, { color: gc, opacity: 0.45, spacing: 10, keyPrefix: 'gfk_' }));
+        gk.push(Tp(cx, (bottom + floorPx) / 2 + 4, (floorPx - bottom) / ppiY));
+        // right
+        gk.push(React.createElement('line', { key: 'gr', x1: right, y1: cy, x2: rPx, y2: cy, ...line }));
+        gk.push(...this.tickMarks(right, cy, rPx, cy, { color: gc, opacity: 0.45, spacing: 10, keyPrefix: 'grk_' }));
+        gk.push(Tp((right + rPx) / 2, cy + 13, (rPx - right) / ppiX));
+      }
+      // ---- move guides: inter-piece distances + orange alignment highlights ----
+      const mv = this.active && this.active.type === 'move' ? this.active : null;
+      if (mv) {
+        const GOLD = '#d6a418';
+        const mg = this.computeMoveGuides((mv.group || []).map(g => g.id));
+        mg.aligns.forEach((l, i) => gk.push(React.createElement('line', { key: 'mva' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: GOLD, strokeWidth: 2, opacity: 0.95 })));
+        mg.dists.forEach((d, i) => {
+          gk.push(React.createElement('line', { key: 'mvd' + i, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 }));
+          // end caps
+          if (d.horiz) { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1, y1: d.y1 - 4, x2: d.x1, y2: d.y1 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2, y1: d.y2 - 4, x2: d.x2, y2: d.y2 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
+          else { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1 - 4, y1: d.y1, x2: d.x1 + 4, y2: d.y1, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2 - 4, y1: d.y2, x2: d.x2 + 4, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
+          gk.push(React.createElement('text', { key: 'mvdt' + i, x: d.mx, y: d.my + (d.horiz ? -5 : 0), fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, fontWeight: 600, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3.5, paintOrder: 'stroke', textAnchor: 'middle', dominantBaseline: d.horiz ? 'auto' : 'middle' }, this.fmt(d.val) + ' ' + S.unit));
+        });
+      }
+    }
+    const guideLayer = disp.w ? React.createElement('svg', { width: disp.w, height: disp.h, style: { position: 'absolute', left: 0, top: 0, pointerEvents: 'none', overflow: 'visible', zIndex: 16 } }, gk) : null;
+
+    // wall bounds layer
+    let wallLayer = null;
+    if (S.showWall && disp.w) {
+      const locked = S.wallLocked; const wc = locked ? '#4a4a4a' : acc;
+      const W = S.wall; const x = W.left * disp.w, y = W.top * disp.h, w = (W.right - W.left) * disp.w, h = (W.bottom - W.top) * disp.h;
+      const wallTicks = [
+        ...this.tickMarks(x, y, x + w, y, { color: wc, opacity: locked ? 0.7 : 0.4, spacing: 12, keyPrefix: 'wtT_' }),
+        ...this.tickMarks(x, W.bottom * disp.h, x + w, W.bottom * disp.h, { color: wc, opacity: locked ? 0.8 : 0.55, spacing: 12, keyPrefix: 'wtB_' }),
+        ...this.tickMarks(x, y, x, W.bottom * disp.h, { color: wc, opacity: locked ? 0.7 : 0.4, spacing: 12, keyPrefix: 'wtL_' }),
+        ...this.tickMarks(x + w, y, x + w, W.bottom * disp.h, { color: wc, opacity: locked ? 0.7 : 0.4, spacing: 12, keyPrefix: 'wtR_' }),
+      ];
+      const svg = React.createElement('svg', { key: 'ws', width: disp.w, height: disp.h, style: { position: 'absolute', left: 0, top: 0, pointerEvents: 'none', overflow: 'visible', zIndex: 6 } },
+        [React.createElement('rect', { key: 'wr', x, y, width: w, height: h, fill: 'none', stroke: wc, strokeWidth: 1, strokeDasharray: '2 5', opacity: locked ? 0.5 : 0.35 }),
+         // left + bottom edges bolded as the primary reference axes
+         React.createElement('line', { key: 'wtop', x1: x, y1: y, x2: x + w, y2: y, stroke: wc, strokeWidth: 1.2, opacity: locked ? 0.7 : 0.55 }),
+         React.createElement('line', { key: 'wleft', x1: x, y1: y, x2: x, y2: W.bottom * disp.h, stroke: wc, strokeWidth: 2, opacity: locked ? 0.9 : 0.8 }),
+         React.createElement('line', { key: 'wf', x1: x, y1: W.bottom * disp.h, x2: x + w, y2: W.bottom * disp.h, stroke: wc, strokeWidth: 2, opacity: locked ? 0.9 : 0.8 }),
+         ...wallTicks]);
+      const grip = (edge, cx, cy, cursor) => React.createElement('div', { key: 'g' + edge, onPointerDown: (e) => { e.stopPropagation(); this.active = { type: 'wall', edge }; }, style: { position: 'absolute', left: cx - 7, top: cy - 7, width: 14, height: 14, borderRadius: '50%', background: '#fff', border: '2px solid ' + acc, cursor, zIndex: 8, touchAction: 'none', opacity: 0.9 } });
+      const grips = locked ? [] : [
+        grip('top', (x + x + w) / 2, y, 'ns-resize'), grip('bottom', (x + x + w) / 2, W.bottom * disp.h, 'ns-resize'),
+        grip('left', x, (y + W.bottom * disp.h) / 2, 'ew-resize'), grip('right', x + w, (y + W.bottom * disp.h) / 2, 'ew-resize')];
+      wallLayer = React.createElement(React.Fragment, null, [svg, ...grips]);
+    }
+
+
+
+    const swatches = this.swatchColors.map(c => ({ onPick: () => this.pickColor(c), style: { flex: 1, height: 26, borderRadius: 6, background: c, cursor: 'pointer', border: c === S.rectColor ? '2px solid #1c1b19' : '1px solid rgba(0,0,0,0.12)', padding: 0 } }));
+
+    const pieceRows = S.pieces.map((p, i) => { const sel = S.selectedIds.includes(p.id); const inch = this.pieceInches(p);
+      return { onSelect: (e) => this.rowSelect(p.id, e), onDelete: (e) => this.deletePiece(p.id, e),
+        name: (p.kind === 'image' ? (p.mode === 'frac' ? 'Lifted art ' : 'Artwork ') : 'Rectangle ') + (i + 1),
+        dims: inch ? (this.fmt(inch.w) + ' × ' + this.fmt(inch.h) + ' ' + S.unit) : '—',
+        style: { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderRadius: 8, cursor: 'pointer', border: '1px solid ' + (sel ? acc : '#efeeeb'), background: sel ? 'rgba(74,99,166,0.05)' : '#fff' },
+        chipStyle: p.kind === 'image' ? { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: '#f0efec center/cover', backgroundImage: 'url(' + p.src + ')' } : { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: p.color, border: '1px solid rgba(0,0,0,0.1)' } };
+    });
+
+    const seg = (on) => ({ padding: '7px 11px', border: 'none', background: on ? acc : '#fff', color: on ? '#fff' : '#6b6863', font: "500 12px 'IBM Plex Mono',monospace", cursor: 'pointer' });
+    const toggleStyle = (on) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 11px', marginBottom: 8, border: '1px solid #ecebe8', borderRadius: 8, background: '#fbfbfa', font: '500 13px system-ui', color: '#1c1b19', cursor: 'pointer' });
+    const pill = (on) => ({ font: "600 10px 'IBM Plex Mono',monospace", letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 20, background: on ? acc : '#e2e1de', color: on ? '#fff' : '#9a968f' });
+    const primary = (disabled) => ({ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : acc), background: disabled ? '#f0efec' : acc, color: disabled ? '#c2beb6' : '#fff', font: '600 13px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
+    const alignBtn = { flex: 1, padding: '7px 4px', border: '1px solid #e2e1de', background: '#fff', color: '#1c1b19', borderRadius: 6, font: '500 11.5px system-ui', cursor: 'pointer' };
+    const gridBtn = (active, disabled) => ({ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, padding: '10px 8px', minHeight: 40, borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : (active ? acc : '#d9d7d2')), background: disabled ? '#f7f6f4' : (active ? 'rgba(74,99,166,0.08)' : '#fff'), color: disabled ? '#c2beb6' : (active ? acc : '#1c1b19'), font: '600 12.5px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
+
+    return {
+      rootRef: this.rootRef, wrapRef: this.wrapRef, cropRef: this.cropRef, imgRef: this.imgRef, brushRef: this.brushRef,
+      wallSrc: S.wallSrc, unit: S.unit,
+      onImgLoad: () => this.onImgLoad(), onWrapDown: () => this.onWrapDown(), onWrapDoubleClick: (e) => this.onWrapDoubleClick(e),
+      guideLayer, wallLayer, pieces, patches,
+      drawMode: S.liftMode || S.brushMode, onStageDown: (e) => this.onDrawStart(e),
+      catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(74,99,166,0.04)' : 'transparent' },
+      brushCanvasStyle: { position: 'absolute', left: 0, top: 0, width: disp.w + 'px', height: disp.h + 'px', zIndex: 7, pointerEvents: 'none' },
+      dispWInt: Math.round(disp.w) || 1, dispHInt: Math.round(disp.h) || 1,
+      onCatcherMove: (e) => this.onCatcherMove(e), onCatcherLeave: () => this.onCatcherLeave(),
+      brushCursorEl: (S.brushMode && S.brushCursor && disp.w) ? React.createElement('div', {
+        style: { position: 'absolute', left: (S.brushCursor.x * disp.w) + 'px', top: (S.brushCursor.y * disp.h) + 'px', width: (S.brushSize * disp.w * 2) + 'px', height: (S.brushSize * disp.w * 2) + 'px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '1.5px dashed ' + acc, background: 'rgba(74,99,166,0.08)', pointerEvents: 'none', zIndex: 41 },
+      }) : null,
+
+      showHint: !ready || (S.pieces.length === 0 && !S.liftMode && !S.brushMode),
+      hintText: !ready ? 'Set a wall-height estimate to begin.' : (S.brushMode ? (S.brushStrokeCount > 0 ? 'Painting — ' + S.brushStrokeCount + ' stroke' + (S.brushStrokeCount === 1 ? '' : 's') + ' so far. Click & drag over any spot to blend it in.' : 'Click and drag over any spot — color blends in from the surrounding wall as you paint.') : (S.liftMode ? 'Drag a box around the art already on the wall to lift it off.' : 'Add art, upload a photo, or lift the existing piece. Drag to arrange; shift-click for several.')),
+
+      scaleStatus: ready ? 'set' : 'not set',
+      scaleStatusColor: ready ? '#3f7d4e' : '#c0392b',
+      wallHeightStr: S.wallHeightStr, onWallHeight: (e) => this.onWallHeight(e),
+      wallWidthStr: S.wallWidthStr, onWallWidth: (e) => this.onWallWidth(e),
+      onUnitIn: () => this.onUnitIn(), onUnitCm: () => this.onUnitCm(), unitInStyle: seg(S.unit === 'in'), unitCmStyle: seg(S.unit === 'cm'),
+      onToggleLock: () => this.onToggleLock(),
+      lockLabel: S.wallLocked ? '🔒' : '🔓',
+      lockTitle: S.wallLocked ? 'Guides locked — tap to adjust' : 'Lock floor & wall guides',
+      lockBtnStyle: { justifySelf: 'stretch', padding: '7px 9px', borderRadius: 7, border: '1px solid ' + (S.wallLocked ? '#4a4a4a' : '#d9d7d2'), background: S.wallLocked ? '#4a4a4a' : '#fff', fontSize: 15, lineHeight: 1, cursor: 'pointer' },
+
+      rectW: S.rectW, rectH: S.rectH, onRectW: (e) => this.onRectW(e), onRectH: (e) => this.onRectH(e), swatches,
+      onAddRect: () => this.onAddRect(), addRectStyle: primary(!ready || !(this.toIn(S.rectW) > 0 && this.toIn(S.rectH) > 0)),
+      showRectOptions: S.showRectOptions,
+      onToggleRectOptions: () => this.onToggleRectOptions(), addRectBtnStyle: gridBtn(S.showRectOptions, false),
+      onUpload: (e) => this.onUpload(e),
+      uploadStyle: gridBtn(false, false),
+      hasUploadError: !!S.uploadError, uploadError: S.uploadError,
+      onLift: () => this.onLift(),
+      liftLabel: S.liftMode ? 'Cancel lift' : 'Lift artwork',
+      liftBtnStyle: gridBtn(S.liftMode, !ready),
+
+      onToggleBrush: () => this.onToggleBrush(),
+      brushLabel: S.brushMode ? 'Done painting' : 'Touch-up brush',
+      brushBtnStyle: gridBtn(S.brushMode, false),
+      showBrushControls: S.brushMode,
+      brushSize: S.brushSize, onBrushSize: (e) => this.onBrushSize(e),
+      onClearBrush: () => this.onClearBrush(),
+
+      hasSelection: S.selectedIds.length > 0, selCount: S.selectedIds.length, multiSel: S.selectedIds.length >= 2,
+      alignBtn,
+      onAlignL: () => this.align('l'), onAlignCH: () => this.align('ch'), onAlignR: () => this.align('r'),
+      onAlignT: () => this.align('t'), onAlignCV: () => this.align('cv'), onAlignB: () => this.align('b'),
+      onDistH: () => this.distribute('h'), onDistV: () => this.distribute('v'),
+      onDuplicate: () => this.duplicateSelected(), onDeleteSel: () => this.deleteSelected(),
+      selActionBtn: { flex: 1, padding: '8px', border: '1px solid #e2e1de', background: '#fff', color: '#1c1b19', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
+      selDeleteBtn: { flex: 1, padding: '8px', border: '1px solid #e7c9c4', background: '#fff', color: '#c0392b', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
+
+      onToggleDims: () => this.onToggleDims(), onToggleGuides: () => this.onToggleGuides(), onToggleWall: () => this.onToggleWall(),
+      dimsToggleStyle: toggleStyle(S.showDims), guidesToggleStyle: toggleStyle(S.showSpacing || S.showAlignGrid), wallToggleStyle: toggleStyle(S.showWall),
+      dimsPillStyle: pill(S.showDims), guidesPillStyle: pill(S.showSpacing || S.showAlignGrid), wallPillStyle: pill(S.showWall),
+      dimsPillText: S.showDims ? 'ON' : 'OFF', guidesPillText: (S.showSpacing || S.showAlignGrid) ? 'ON' : 'OFF', wallPillText: S.showWall ? 'ON' : 'OFF',
+      selectAll: (e) => this.selectAll(e),
+
+      hasPieces: S.pieces.length > 0, pieceCount: S.pieces.length, pieceRows,
+      onReplaceWall: (e) => this.onReplaceWall(e),
+      hasWallHistory: S.wallHistory.length > 1,
+      wallHistoryRows: S.wallHistory.map((src, i) => { const active = src === S.wallSrc; return { onRestore: () => this.switchWall(src), style: { flex: '0 0 auto', width: 40, height: 28, borderRadius: 5, border: '1.5px solid ' + (active ? acc : '#e2e1de'), background: '#f0efec center/cover', backgroundImage: 'url(' + src + ')', cursor: active ? 'default' : 'pointer', opacity: active ? 1 : 0.85 } }; }),
+
+      hasLibrary: S.library.length > 0, libraryCount: S.library.length,
+      libraryRows: S.library.map(item => ({
+        onPlace: () => this.placeFromLibrary(item),
+        onDelete: (e) => this.deleteFromLibrary(item.id, e),
+        onStartRename: (e) => this.startRenameLib(item.id, item.name, e),
+        editing: S.editingLibId === item.id,
+        notEditing: S.editingLibId !== item.id,
+        editName: S.editingLibId === item.id ? S.editingLibName : item.name,
+        onEditName: (e) => this.onEditingLibName(e),
+        onEditKey: (e) => this.onRenameLibKey(e),
+        onEditBlur: () => this.commitRenameLib(),
+        stopProp: (e) => e.stopPropagation(),
+        name: item.name, dims: (item.wIn && item.hIn) ? (this.fmt(item.wIn) + ' × ' + this.fmt(item.hIn) + ' ' + S.unit) : 'size varies',
+        thumbStyle: { flex: '0 0 auto', width: 34, height: 34, borderRadius: 5, background: '#f0efec center/cover', backgroundImage: 'url(' + item.src + ')' },
+      })),
+      onSaveConfig: () => this.saveConfig(), onLoadConfig: (e) => this.onLoadConfig(e),
+
+      cropping: !!S.crop, cropSrc: S.crop && S.crop.src, cropW: S.crop && S.crop.wStr, cropH: S.crop && S.crop.hStr,
+      onCropW: (e) => this.onCropW(e), onCropH: (e) => this.onCropH(e),
+      cropBoxStyle: S.crop ? { position: 'absolute', left: (S.crop.box.x * 100) + '%', top: (S.crop.box.y * 100) + '%', width: (S.crop.box.w * 100) + '%', height: (S.crop.box.h * 100) + '%', border: '2px solid ' + acc, boxShadow: '0 0 0 9999px rgba(24,23,21,0.45)', cursor: 'move', touchAction: 'none', boxSizing: 'border-box' } : { display: 'none' },
+      onCropBoxDown: (e) => this.onCropBoxDown(e),
+      onCropNW: (e) => this.cropCorner('nw', e), onCropNE: (e) => this.cropCorner('ne', e), onCropSW: (e) => this.cropCorner('sw', e), onCropSE: (e) => this.cropCorner('se', e),
+      onCropCancel: () => this.onCropCancel(), onCropConfirm: () => this.onCropConfirm(),
+    };
+  }
+}
+</script>
+</body>
+</html>
