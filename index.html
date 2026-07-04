@@ -10,11 +10,15 @@
 <script src="./support.js"></script>
 </head>
 <body>
+<div id="ap-splash" style="position:fixed;inset:0;z-index:9999;background:#f4f3f1;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
+  <div style="text-align:center">
+    <div style="width:26px;height:26px;margin:0 auto 14px;border:2.5px solid #e2e1de;border-top-color:#4a63a6;border-radius:50%;animation:ap-spin 0.7s linear infinite"></div>
+    <div style="font:600 16px system-ui;color:#1c1b19;letter-spacing:-0.01em">Art Placer</div>
+    <div style="font:400 12.5px system-ui;color:#9a968f;margin-top:4px">Loading…</div>
+  </div>
+</div>
 <x-dc>
 <helmet>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #f4f3f1; }
@@ -25,13 +29,25 @@
   button:active { filter: brightness(0.9); }
   label.btn-hover { transition: filter 0.12s ease; }
   label.btn-hover:hover { filter: brightness(0.95); }
+  #ap-splash { transition: opacity 0.25s ease; }
+  @keyframes ap-spin { to { transform: rotate(360deg); } }
+  @keyframes ap-piece-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+  @keyframes ap-saved-pulse { 0% { opacity: 0; transform: translateY(2px); } 20% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes ap-snap-flash { 0% { opacity: 1; stroke-width: 4px; } 100% { opacity: 0.95; stroke-width: 2px; } }
+  /* Phone / narrow: stack the stage over the panel instead of a fixed side panel */
+  @media (max-width: 720px) {
+    .ap-root { flex-direction: column !important; height: auto !important; min-height: 100vh !important; }
+    .ap-stage { flex: 0 0 auto !important; height: 54vh !important; padding: 12px !important; }
+    .ap-stage img { max-height: calc(54vh - 24px) !important; }
+    .ap-panel { flex: 0 0 auto !important; width: 100% !important; height: auto !important; border-left: none !important; border-top: 1px solid #e6e5e2 !important; }
+  }
 </style>
 </helmet>
 
-<div ref="{{ rootRef }}" tabindex="0" style="display:flex;height:100vh;min-height:520px;width:100%;font-family:system-ui,-apple-system,sans-serif;color:#1c1b19;--accent:#4a63a6;background:#f4f3f1;outline:none">
+<div ref="{{ rootRef }}" class="ap-root" tabindex="0" style="display:flex;height:100vh;min-height:520px;width:100%;font-family:system-ui,-apple-system,sans-serif;color:#1c1b19;--accent:#4a63a6;background:#f4f3f1;outline:none">
 
   <!-- ============ STAGE ============ -->
-  <div style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden">
+  <div class="ap-stage" style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden">
     <div ref="{{ wrapRef }}" onPointerDown="{{ onWrapDown }}" onDoubleClick="{{ onWrapDoubleClick }}" style="position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0;box-shadow:0 12px 40px -12px rgba(0,0,0,0.35);border-radius:2px;overflow:visible">
       <img ref="{{ imgRef }}" src="{{ wallSrc }}" onLoad="{{ onImgLoad }}" draggable="false" style="display:block;max-width:100%;max-height:calc(100vh - 56px);width:auto;height:auto;user-select:none;border-radius:2px" />
 
@@ -53,7 +69,7 @@
             <div style="{{ h.style }}" onPointerDown="{{ h.onDown }}"></div>
           </sc-for>
           <sc-if value="{{ p.showLabel }}" hint-placeholder-val="{{ true }}">
-            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 11px 'IBM Plex Mono',monospace;color:#1c1b19;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.12);max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#1c1b19;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.12);max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
           </sc-if>
         </div>
       </sc-for>
@@ -64,13 +80,15 @@
       {{ brushCursorEl }}
     </div>
 
+    {{ onboardingEl }}
+
     <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
       <div style="position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(28,27,25,0.9);color:#fff;border-radius:9px;font:500 12.5px system-ui;box-shadow:0 8px 24px -8px rgba(0,0,0,0.5);pointer-events:none;padding:10px 15px;max-width:640px;text-align:center;line-height:1.4">{{ hintText }}</div>
     </sc-if>
   </div>
 
   <!-- ============ PANEL ============ -->
-  <div style="flex:0 0 322px;width:322px;height:100vh;overflow-y:auto;background:#fff;border-left:1px solid #e6e5e2;padding:20px 18px 40px;display:flex;flex-direction:column;gap:16px">
+  <div class="ap-panel" style="flex:0 0 322px;width:322px;height:100vh;overflow-y:auto;background:#fff;border-left:1px solid #e6e5e2;padding:20px 18px 40px;display:flex;flex-direction:column;gap:16px">
 
     <div>
       <div style="font:600 15px system-ui;letter-spacing:-0.01em">Art Placer</div>
@@ -80,19 +98,19 @@
     <!-- SCALE -->
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
-        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f">1 · Scale</div>
-        <div style="font:500 10.5px 'IBM Plex Mono',monospace;color:{{ scaleStatusColor }}">{{ scaleStatus }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f">1 · Scale</div>
+        <div style="font:500 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:{{ scaleStatusColor }}">{{ scaleStatus }}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 66px auto;gap:8px 8px;align-items:center;margin-bottom:11px">
         <div style="font:400 11.5px system-ui;color:#6b6863">Wall height</div>
-        <input type="number" value="{{ wallHeightStr }}" onChange="{{ onWallHeight }}" onDoubleClick="{{ selectAll }}" style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none;text-align:right" />
+        <input type="number" value="{{ wallHeightStr }}" onChange="{{ onWallHeight }}" onDoubleClick="{{ selectAll }}" style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none;text-align:right" />
         <div style="display:flex;border:1px solid #e2e1de;border-radius:7px;overflow:hidden">
           <button onClick="{{ onUnitIn }}" style="{{ unitInStyle }}">in</button>
           <button onClick="{{ onUnitCm }}" style="{{ unitCmStyle }}">cm</button>
         </div>
         <div style="font:400 11.5px system-ui;color:#6b6863">Wall width</div>
-        <input type="number" value="{{ wallWidthStr }}" onChange="{{ onWallWidth }}" onDoubleClick="{{ selectAll }}" placeholder="opt." style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none;text-align:right" />
+        <input type="number" value="{{ wallWidthStr }}" onChange="{{ onWallWidth }}" onDoubleClick="{{ selectAll }}" placeholder="opt." style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none;text-align:right" />
         <button onClick="{{ onToggleLock }}" title="{{ lockTitle }}" style="{{ lockBtnStyle }}">{{ lockLabel }}</button>
       </div>
     </div>
@@ -101,7 +119,7 @@
 
     <!-- ADD ART -->
     <div>
-      <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">2 · Add art</div>
+      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">2 · Add art</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
         <button onClick="{{ onToggleRectOptions }}" style="{{ addRectBtnStyle }}">Add rectangle</button>
@@ -117,16 +135,20 @@
         <div style="font:400 11px system-ui;color:#c0392b;margin-bottom:9px;line-height:1.4;background:#fdf1ef;border:1px solid #f2d3ce;border-radius:7px;padding:8px 9px">{{ uploadError }}</div>
       </sc-if>
 
+      <sc-if value="{{ hasUploadNotice }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;font:500 11.5px system-ui;color:#6b6863;margin-bottom:9px;background:#f5f4f2;border:1px solid #e6e5e2;border-radius:7px;padding:8px 10px"><span style="width:13px;height:13px;border:2px solid #d9d7d2;border-top-color:var(--accent);border-radius:50%;animation:ap-spin 0.7s linear infinite;flex:0 0 auto"></span>{{ uploadNotice }}</div>
+      </sc-if>
+
       <sc-if value="{{ showRectOptions }}" hint-placeholder-val="{{ false }}">
         <div style="margin-bottom:9px;padding:9px 10px;border:1px solid #ecebe8;border-radius:8px;background:#fbfbfa">
           <div style="display:flex;gap:8px;margin-bottom:9px">
             <label style="flex:1">
               <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
-              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fff;outline:none" />
+              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
             </label>
             <label style="flex:1">
               <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
-              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fff;outline:none" />
+              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
             </label>
           </div>
 
@@ -156,7 +178,7 @@
     <sc-if value="{{ hasLibrary }}" hint-placeholder-val="{{ false }}">
       <div>
         <div style="height:1px;background:#efeeeb;margin-bottom:22px"></div>
-        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Library · {{ libraryCount }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Library · {{ libraryCount }}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <sc-for list="{{ libraryRows }}" as="lb" hint-placeholder-count="0">
             <div onClick="{{ lb.onPlace }}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid #efeeeb;background:#fff;min-width:0">
@@ -168,7 +190,7 @@
                 <sc-if value="{{ lb.notEditing }}" hint-placeholder-val="{{ true }}">
                   <div onDoubleClick="{{ lb.onStartRename }}" style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lb.name }}</div>
                 </sc-if>
-                <div style="font:400 11px 'IBM Plex Mono',monospace;color:#9a968f">{{ lb.dims }}</div>
+                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9a968f">{{ lb.dims }}</div>
               </div>
               <button onClick="{{ lb.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
             </div>
@@ -180,7 +202,7 @@
     <!-- SELECTION -->
     <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:10px">Selected · {{ selCount }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:10px">Selected · {{ selCount }}</div>
         <sc-if value="{{ multiSel }}" hint-placeholder-val="{{ false }}">
           <div style="margin-bottom:9px">
             <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em">Align</div>
@@ -200,11 +222,23 @@
             </div>
           </div>
         </sc-if>
+        <sc-if value="{{ hasSingleSel }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:8px;margin-bottom:9px">
+            <label style="flex:1">
+              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
+              <input type="number" value="{{ selWStr }}" onChange="{{ onSelWidth }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+            </label>
+            <label style="flex:1">
+              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
+              <input type="number" value="{{ selHStr }}" onChange="{{ onSelHeight }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+            </label>
+          </div>
+        </sc-if>
         <div style="display:flex;gap:6px">
           <button onClick="{{ onDuplicate }}" style="{{ selActionBtn }}">Duplicate</button>
           <button onClick="{{ onDeleteSel }}" style="{{ selDeleteBtn }}">Delete</button>
         </div>
-        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · Del to remove</div>
+        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
       </div>
     </sc-if>
 
@@ -212,7 +246,7 @@
 
     <!-- DISPLAY -->
     <div>
-      <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Display</div>
+      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Display</div>
       <button onClick="{{ onToggleDims }}" style="{{ dimsToggleStyle }}"><span>Dimension labels</span><span style="{{ dimsPillStyle }}">{{ dimsPillText }}</span></button>
       <button onClick="{{ onToggleGuides }}" style="{{ guidesToggleStyle }}"><span>Alignment guides</span><span style="{{ guidesPillStyle }}">{{ guidesPillText }}</span></button>
       <button onClick="{{ onToggleWall }}" style="{{ wallToggleStyle }}"><span>Wall bounds</span><span style="{{ wallPillStyle }}">{{ wallPillText }}</span></button>
@@ -221,14 +255,14 @@
     <!-- PIECES -->
     <sc-if value="{{ hasPieces }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">On the wall · {{ pieceCount }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">On the wall · {{ pieceCount }}</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <sc-for list="{{ pieceRows }}" as="r" hint-placeholder-count="0">
             <div onClick="{{ r.onSelect }}" style="{{ r.style }}">
               <div style="{{ r.chipStyle }}"></div>
               <div style="flex:1;min-width:0">
                 <div style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
-                <div style="font:400 11px 'IBM Plex Mono',monospace;color:#9a968f">{{ r.dims }}</div>
+                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9a968f">{{ r.dims }}</div>
               </div>
               <button onClick="{{ r.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
             </div>
@@ -238,6 +272,10 @@
     </sc-if>
 
     <div style="flex:1"></div>
+
+    <div style="display:flex;align-items:center;justify-content:flex-end;height:14px;margin-bottom:-6px">
+      <span id="ap-saved" style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.06em;color:#3f7d4e;opacity:0">Saved ✓</span>
+    </div>
 
     <div style="display:flex;gap:6px">
       <button onClick="{{ onSaveConfig }}" style="flex:1;padding:9px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 12px system-ui;cursor:pointer">Save config</button>
@@ -259,7 +297,7 @@
 
     <label class="btn-hover" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;border:1px solid #e2e1de;border-radius:7px;font:500 11.5px system-ui;color:#6b6863;cursor:pointer;align-self:flex-start">
       <span>Replace wall photo</span>
-      <input type="file" accept="image/*" onChange="{{ onReplaceWall }}" style="display:none" />
+      <input type="file" accept="image/*" capture="environment" onChange="{{ onReplaceWall }}" style="display:none" />
     </label>
   </div>
 
@@ -283,11 +321,11 @@
         <div style="display:flex;gap:8px;align-items:flex-end;margin-top:16px">
           <label style="flex:1">
             <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real width ({{ unit }})</div>
-            <input type="number" value="{{ cropW }}" onChange="{{ onCropW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none" />
+            <input type="number" value="{{ cropW }}" onChange="{{ onCropW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
           </label>
           <label style="flex:1">
             <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real height ({{ unit }})</div>
-            <input type="number" value="{{ cropH }}" onChange="{{ onCropH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px 'IBM Plex Mono',monospace;background:#fbfbfa;outline:none" />
+            <input type="number" value="{{ cropH }}" onChange="{{ onCropH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
           </label>
         </div>
 
@@ -314,6 +352,10 @@ class Component extends DCLogic {
   _brushDirty = false;    // only re-serialize the brush canvas when it changed
   _brushSnapshot = null;  // last serialized brush PNG (reused between saves)
   _suppressGuessFor = null; // wallSrc whose bounds were restored — skip auto-guess
+  _idSeq = 0;             // monotonic suffix so two IDs in the same ms never collide
+
+  // unique id: time + a per-instance counter so rapid adds can't collide
+  newId(prefix) { return (prefix || 'p') + Date.now().toString(36) + '_' + (++this._idSeq).toString(36); }
 
   state = {
     wallSrc: 'uploads/wall_image-1783003840450.jpg',
@@ -330,16 +372,20 @@ class Component extends DCLogic {
     showAlignGrid: true,
     crop: null,
     snap: [],
-    uploadError: null,
+    uploadError: null, uploadNotice: null,
     library: [],
     brushMode: false, brushSize: 0.035, brushCursor: null, brushStrokeCount: 0,
     editingLibId: null, editingLibName: '',
     wallHistory: [],
+    selWStr: '', selHStr: '',
   };
 
   swatchColors = ['#b9563f', '#d9b26a', '#4a5a52', '#2f3a46', '#8a8f98', '#e8e2d6'];
 
   componentDidMount() {
+    // fade out the static loading splash now that the real UI has painted
+    const sp = document.getElementById('ap-splash');
+    if (sp) { sp.style.opacity = '0'; setTimeout(() => sp.remove(), 260); }
     this.applyVars();
     if (this.props.defaultUnit && this.props.defaultUnit !== this.state.unit) this.setState({ unit: this.props.defaultUnit });
     try { const raw = localStorage.getItem('artPlacerLibrary'); if (raw) { const lib = JSON.parse(raw); if (Array.isArray(lib)) this.setState({ library: lib }); } } catch (e) {}
@@ -371,7 +417,20 @@ class Component extends DCLogic {
     };
     requestAnimationFrame(poll);
   }
-  componentDidUpdate() { this.applyVars(); this.syncBrushCanvas(); this.queueAutosave(); }
+  componentDidUpdate() { this.applyVars(); this.syncBrushCanvas(); this.queueAutosave(); this.syncSelSizeFields(); }
+  // keep the Selected-panel width/height inputs in step with which single piece is
+  // selected. Keyed on the id only (not its dims) so typing in the fields — which
+  // changes the piece live — doesn't get overwritten mid-keystroke.
+  singleSel() { return this.state.selectedIds.length === 1 ? this.state.selectedIds[0] : null; }
+  syncSelSizeFields() {
+    const id = this.singleSel();
+    if (id === this._selSizeId) return;
+    this._selSizeId = id;
+    if (!id) { this.setState({ selWStr: '', selHStr: '' }); return; }
+    const p = this.state.pieces.find(x => x.id === id); if (!p) return;
+    const inch = this.pieceInches(p);
+    if (inch) this.setState({ selWStr: this.fmt(inch.w), selHStr: this.fmt(inch.h) });
+  }
   // redraw the display brush canvas from the natural-res stroke buffer
   syncBrushCanvas() {
     const cv = this.brushRef.current; if (!cv || !this.brushNat) return;
@@ -380,16 +439,51 @@ class Component extends DCLogic {
     try { ctx.drawImage(this.brushNat, 0, 0, cv.width, cv.height); } catch (e) {}
   }
 
-  // ---- undo ----
+  // ---- undo / redo ----
   pushHistory() {
     if (!this.history) this.history = [];
     this.history.push({ pieces: this.state.pieces, patches: this.state.patches });
     if (this.history.length > 40) this.history.shift();
+    this.redoStack = []; // a fresh action invalidates the redo branch
   }
   undo() {
     if (!this.history || !this.history.length) return;
     const snap = this.history.pop();
-    this.setState({ pieces: snap.pieces, patches: snap.patches, selectedIds: [] });
+    if (!this.redoStack) this.redoStack = [];
+    this.redoStack.push({ pieces: this.state.pieces, patches: this.state.patches });
+    this.setState({ pieces: snap.pieces, patches: snap.patches, selectedIds: [] }, () => this.rebuildWallCanvas());
+  }
+  redo() {
+    if (!this.redoStack || !this.redoStack.length) return;
+    const snap = this.redoStack.pop();
+    if (!this.history) this.history = [];
+    this.history.push({ pieces: this.state.pieces, patches: this.state.patches });
+    this.setState({ pieces: snap.pieces, patches: snap.patches, selectedIds: [] }, () => this.rebuildWallCanvas());
+  }
+  // After undo/redo, rebuild the sampled wall canvas so the brush + future lifts
+  // sample a background that matches what's on screen: original photo, then the
+  // remaining patch fills, then the accumulated brush strokes on top.
+  rebuildWallCanvas() {
+    const img = this.imgRef.current;
+    if (!img || !img.naturalWidth || !this.wctx || !this.wnat) return;
+    const nat = this.wnat;
+    try {
+      this.wctx.clearRect(0, 0, nat.w, nat.h);
+      this.wctx.drawImage(img, 0, 0, nat.w, nat.h);
+    } catch (e) { return; }
+    const patches = this.state.patches.slice();
+    const drawBrush = () => { if (this.brushNat) { try { this.wctx.drawImage(this.brushNat, 0, 0, nat.w, nat.h); } catch (e) {} } };
+    if (!patches.length) { drawBrush(); return; }
+    let pending = patches.length;
+    patches.forEach(pt => {
+      if (!pt.src) { if (--pending === 0) drawBrush(); return; }
+      const im = new Image();
+      im.onload = im.onerror = () => {
+        try { if (pt.src) this.wctx.drawImage(im, Math.round(pt.fx * nat.w), Math.round(pt.fy * nat.h), Math.round(pt.fw * nat.w), Math.round(pt.fh * nat.h)); } catch (e) {}
+        if (--pending === 0) drawBrush();
+      };
+      im.src = pt.src;
+    });
   }
   componentWillUnmount() {
     window.removeEventListener('pointermove', this._move);
@@ -429,8 +523,6 @@ class Component extends DCLogic {
   }
   sessionData() {
     const S = this.state;
-    // only rasterize the (potentially large) brush layer when it actually changed
-    if (this._brushDirty && this.brushNat) { try { this._brushSnapshot = this.brushNat.toDataURL('image/png'); } catch (e) {} this._brushDirty = false; }
     return {
       version: 3, unit: S.unit, wall: S.wall,
       wallHeightIn: S.wallHeightIn, wallWidthIn: S.wallWidthIn,
@@ -441,10 +533,38 @@ class Component extends DCLogic {
       wallHistory: S.wallHistory, library: S.library,
     };
   }
+  // Serialize the (potentially large) brush canvas asynchronously with toBlob so
+  // it never freezes the main thread right after you stop painting. The debounced
+  // save writes immediately with whatever snapshot exists; once the fresh PNG is
+  // ready it persists again.
+  serializeBrushAsync() {
+    if (!this._brushDirty || !this.brushNat) return;
+    this._brushDirty = false;
+    try {
+      this.brushNat.toBlob((blob) => {
+        if (!blob) return;
+        const r = new FileReader();
+        r.onload = () => { this._brushSnapshot = r.result; if (this._restored) this._idbPut('session', this.sessionData()); };
+        r.readAsDataURL(blob);
+      }, 'image/png');
+    } catch (e) {}
+  }
   queueAutosave() {
     if (!this._restored) return;
     clearTimeout(this._saveTimer);
-    this._saveTimer = setTimeout(() => { this._idbPut('session', this.sessionData()); }, 500);
+    this._saveTimer = setTimeout(() => {
+      this.serializeBrushAsync();
+      this._idbPut('session', this.sessionData());
+      this.pulseSaved();
+    }, 500);
+  }
+  // Flash a "Saved ✓" indicator by restarting its CSS animation directly on the
+  // DOM node — no setState, so the autosave can't re-trigger itself in a loop.
+  pulseSaved() {
+    const el = document.getElementById('ap-saved');
+    if (!el) return;
+    el.style.animation = 'none'; void el.offsetWidth;
+    el.style.animation = 'ap-saved-pulse 1.9s ease forwards';
   }
   restoreSession() {
     this._idbGet('session')
@@ -493,7 +613,9 @@ class Component extends DCLogic {
       const img = this.imgRef.current; if (!img || !img.naturalWidth) return;
       const nw = img.naturalWidth, nh = img.naturalHeight;
       const cv = document.createElement('canvas'); cv.width = nw; cv.height = nh;
-      const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0);
+      // willReadFrequently keeps the canvas CPU-side — the brush + gradient fill do
+      // many getImageData reads per pointer-move; without it each read is a GPU stall.
+      const ctx = cv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(img, 0, 0);
       this.wctx = ctx; this.wnat = { w: nw, h: nh };
       // natural-resolution stroke buffer: brush strokes live here so they survive
       // window resizes (the display canvas clears when its size attrs change)
@@ -521,8 +643,9 @@ class Component extends DCLogic {
     try {
       const N = 96, M = Math.round(N * nh / nw);
       const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = M;
-      tmp.getContext('2d').drawImage(ctx.canvas, 0, 0, N, M);
-      const d = tmp.getContext('2d').getImageData(0, 0, N, M).data;
+      const tctx = tmp.getContext('2d', { willReadFrequently: true });
+      tctx.drawImage(ctx.canvas, 0, 0, N, M);
+      const d = tctx.getImageData(0, 0, N, M).data;
       const lum = new Float32Array(N * M);
       const wallish = new Float32Array(N * M);
       for (let y = 0; y < M; y++) for (let x = 0; x < N; x++) {
@@ -683,7 +806,13 @@ class Component extends DCLogic {
       wallHeightStr: this.state.wallHeightIn ? r1(conv(this.state.wallHeightIn)) : '',
       wallWidthStr: this.state.wallWidthIn ? r1(conv(this.state.wallWidthIn)) : '',
     };
-    if (this.state.crop) { const back = this.state.unit === 'cm' ? 2.54 : 1; patch.crop = { ...this.state.crop, wStr: r1(conv(parseFloat(this.state.crop.wStr) / back)), hStr: r1(conv(parseFloat(this.state.crop.hStr) / back)) }; }
+    if (this.state.crop) {
+      const back = this.state.unit === 'cm' ? 2.54 : 1;
+      const cw = parseFloat(this.state.crop.wStr), ch = parseFloat(this.state.crop.hStr);
+      patch.crop = { ...this.state.crop,
+        wStr: cw > 0 ? r1(conv(cw / back)) : this.state.crop.wStr,
+        hStr: ch > 0 ? r1(conv(ch / back)) : this.state.crop.hStr };
+    }
     this.setState(patch);
   }
   onUnitIn() { this.switchUnit('in'); }
@@ -695,7 +824,7 @@ class Component extends DCLogic {
     const { x: ppiX, y: ppiY } = this.getPpiXY(); if (ppiX <= 0 || ppiY <= 0) return;
     const wIn = this.toIn(this.state.rectW), hIn = this.toIn(this.state.rectH); if (wIn <= 0 || hIn <= 0) return;
     const disp = this.state.disp; const pos = this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h);
-    const id = 'p' + Date.now();
+    const id = this.newId('p');
     this.pushHistory();
     this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'rect', mode: 'in', color: s.rectColor, wIn, hIn, ...pos }], selectedIds: [id] }));
   }
@@ -790,14 +919,14 @@ class Component extends DCLogic {
 
   duplicateSelected() {
     const sel = this.state.pieces.filter(p => this.state.selectedIds.includes(p.id));
-    if (!sel.length) return; this.pushHistory(); const now = Date.now(); const nids = [];
-    const copies = sel.map((p, i) => { const id = 'p' + now + '_' + i; nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
+    if (!sel.length) return; this.pushHistory(); const nids = [];
+    const copies = sel.map((p) => { const id = this.newId('p'); nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
     this.setState(s => ({ pieces: [...s.pieces, ...copies], selectedIds: nids }));
   }
   copySelected() { this.clip = this.state.pieces.filter(p => this.state.selectedIds.includes(p.id)).map(p => ({ ...p })); }
   paste() {
-    if (!this.clip || !this.clip.length) return; this.pushHistory(); const now = Date.now(); const nids = [];
-    const copies = this.clip.map((p, i) => { const id = 'p' + now + '_' + i; nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
+    if (!this.clip || !this.clip.length) return; this.pushHistory(); const nids = [];
+    const copies = this.clip.map((p) => { const id = this.newId('p'); nids.push(id); return { ...p, id, fx: Math.min(0.9, p.fx + 0.03), fy: Math.min(0.9, p.fy + 0.03) }; });
     this.setState(s => ({ pieces: [...s.pieces, ...copies], selectedIds: nids }));
   }
 
@@ -889,13 +1018,13 @@ class Component extends DCLogic {
       url = cv.toDataURL('image/png');
     } catch (e) { url = null; }
     const fill = this.makeGradientFill(rf);
-    const pid = 'p' + Date.now(), ptid = 'pt' + Date.now();
+    const pid = this.newId('p'), ptid = this.newId('pt');
     const fillSrc = url || fill.url;
     const piece = fillSrc ? { id: pid, kind: 'image', mode: 'frac', src: fillSrc, fw: rf.w, fh: rf.h, fx: rf.x, fy: rf.y }
                           : { id: pid, kind: 'rect', mode: 'frac', color: fill.avgColor, fw: rf.w, fh: rf.h, fx: rf.x, fy: rf.y };
     const patch = { id: ptid, fx: rf.x, fy: rf.y, fw: rf.w, fh: rf.h, src: fill.url, color: fill.avgColor };
     this.setState(s => ({ pieces: [...s.pieces, piece], patches: [...s.patches, patch], selectedIds: [pid], liftMode: false, draft: null }));
-    if (url) { const inch = this.pieceInches(piece); this.addToLibrary({ id: 'lib' + Date.now() + '_l', src: url, wIn: inch ? inch.w : null, hIn: inch ? inch.h : null, name: 'Lifted art' }); }
+    if (url) { const inch = this.pieceInches(piece); this.addToLibrary({ id: this.newId('lib'), src: url, wIn: inch ? inch.w : null, hIn: inch ? inch.h : null, name: 'Lifted art' }); }
     // bake the interpolated fill into the sampled wall canvas itself, so the touch-up
     // brush (which reads from this canvas) blends against the CLEANED background —
     // not the original photo, which still has the removed artwork's pixels in it.
@@ -908,24 +1037,72 @@ class Component extends DCLogic {
   }
 
   // ---- upload / crop ----
+  isHeic(file) { return /heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name || ''); }
+  // Lazily fetch a HEIC decoder only when an iPhone HEIC/HEIF is actually picked —
+  // no cost for the common JPG/PNG path, and it removes the app's biggest dead end.
+  loadHeicDecoder() {
+    if (window.heic2any) return Promise.resolve(window.heic2any);
+    if (this._heicPromise) return this._heicPromise;
+    this._heicPromise = new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      s.onload = () => window.heic2any ? res(window.heic2any) : rej(new Error('no decoder'));
+      s.onerror = () => rej(new Error('load failed'));
+      document.head.appendChild(s);
+    });
+    return this._heicPromise;
+  }
   readImage(file, cb) {
+    if (this.isHeic(file)) {
+      this.loadHeicDecoder()
+        .then(h => h({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+        .then(out => this._readBlob(Array.isArray(out) ? out[0] : out, cb))
+        .catch(() => cb(null, null, true));
+      return;
+    }
+    this._readBlob(file, cb);
+  }
+  _readBlob(blob, cb) {
     const rd = new FileReader();
     rd.onload = () => { const img = new Image(); img.onload = () => cb(img, rd.result, false); img.onerror = () => cb(null, null, true); img.src = rd.result; };
     rd.onerror = () => cb(null, null, true);
-    rd.readAsDataURL(file);
+    rd.readAsDataURL(blob);
+  }
+  // Cap an imported photo at ~2000px on the long edge. A 12MP phone photo otherwise
+  // makes every lift, brush stamp and autosave run on a 4000×3000 canvas and bloats
+  // the saved session — on-screen quality is unchanged at this size.
+  downscaleToDataURL(img, url, maxEdge) {
+    const nw = img.naturalWidth, nh = img.naturalHeight; const long = Math.max(nw, nh);
+    if (!long || long <= maxEdge) return url;
+    const scale = maxEdge / long, w = Math.round(nw * scale), h = Math.round(nh * scale);
+    try {
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d'); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, 0, 0, w, h);
+      return cv.toDataURL('image/jpeg', 0.9);
+    } catch (e) { return url; }
   }
   onUpload(e) {
     const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = '';
-    const heic = /heic|heif/i.test(f.type) || /\.hei[cf]$/i.test(f.name || '');
-    this.setState({ uploadError: null });
+    const heic = this.isHeic(f);
+    this.setState({ uploadError: null, uploadNotice: heic ? 'Converting HEIC photo…' : null });
     this.readImage(f, (img, url, failed) => {
-      if (failed || !img) { this.setState({ uploadError: heic ? 'HEIC photos can’t be read by the browser. Export/convert it to JPG or PNG (Photos → Share → Export as JPEG) and upload again.' : 'Could not read that file — try a JPG or PNG.' }); return; }
+      this.setState({ uploadNotice: null });
+      if (failed || !img) { this.setState({ uploadError: heic ? 'This HEIC photo couldn’t be converted. Export it to JPG (Photos → Share → Export as JPEG) and try again.' : 'Could not read that file — try a JPG or PNG.' }); return; }
       this.cropImg = img;
       // default crop = whole image (outer edges); default W/H = the standing square default (e.g. 10x10)
       this.setState({ crop: { src: url, natW: img.naturalWidth, natH: img.naturalHeight, box: { x: 0, y: 0, w: 1, h: 1 }, wStr: this.state.rectW, hStr: this.state.rectH } });
     });
   }
-  onReplaceWall(e) { const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = ''; this.readImage(f, (img, url) => { this.switchWall(url); }); }
+  onReplaceWall(e) {
+    const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = '';
+    const heic = this.isHeic(f);
+    this.setState({ uploadError: null, uploadNotice: heic ? 'Converting HEIC photo…' : null });
+    this.readImage(f, (img, url, failed) => {
+      this.setState({ uploadNotice: null });
+      if (failed || !img) { this.setState({ uploadError: heic ? 'This HEIC photo couldn’t be converted. Export it to JPG and try again.' : 'Could not read that photo — try a JPG or PNG.' }); return; }
+      this.switchWall(this.downscaleToDataURL(img, url, 2000));
+    });
+  }
   // keep the last 3 wall photos used (including the current one) so you can flip back without re-uploading
   switchWall(src) {
     // a freshly chosen photo gets a fresh (empty) brush layer and a fresh
@@ -951,9 +1128,10 @@ class Component extends DCLogic {
     const url = cv.toDataURL('image/png');
     const wIn = this.toIn(c.wStr), hIn = this.toIn(c.hStr); const { x: ppiX, y: ppiY } = this.getPpiXY(); const disp = this.state.disp;
     const pos = (ppiX > 0 && ppiY > 0) ? this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h) : { fx: 0.3, fy: 0.3 };
-    const id = 'p' + Date.now();
+    const id = this.newId('p');
+    this.pushHistory();
     this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'image', mode: 'in', src: url, wIn, hIn, ...pos }], selectedIds: [id], crop: null }));
-    this.addToLibrary({ id: 'lib' + Date.now(), src: url, wIn, hIn, name: 'Artwork' });
+    this.addToLibrary({ id: this.newId('lib'), src: url, wIn, hIn, name: 'Artwork' });
   }
 
   // ---- library ----
@@ -973,8 +1151,27 @@ class Component extends DCLogic {
     let wIn = item.wIn, hIn = item.hIn;
     if (!wIn || !hIn) { wIn = this.toIn(this.state.rectW); hIn = this.toIn(this.state.rectH); }
     const pos = (ppiX > 0 && ppiY > 0) ? this.centeredPos(wIn * ppiX / disp.w, hIn * ppiY / disp.h) : { fx: 0.3, fy: 0.3 };
-    const id = 'p' + Date.now();
+    const id = this.newId('p');
+    this.pushHistory();
     this.setState(s => ({ pieces: [...s.pieces, { id, kind: 'image', mode: 'in', src: item.src, wIn, hIn, ...pos }], selectedIds: [id] }));
+  }
+  // ---- size editor (Selected panel): set a piece's exact real dimensions ----
+  onSelWidth(e) { this.commitSelSize('w', e.target.value); }
+  onSelHeight(e) { this.commitSelSize('h', e.target.value); }
+  commitSelSize(dim, str) {
+    const id = this.singleSel();
+    this.setState(dim === 'w' ? { selWStr: str } : { selHStr: str });
+    if (!id) return;
+    const n = this.toIn(str); if (!(n > 0)) return;
+    const now = Date.now();
+    if (!this._lastSizeEdit || now - this._lastSizeEdit > 800) this.pushHistory();
+    this._lastSizeEdit = now;
+    this.setState(s => ({ pieces: s.pieces.map(p => {
+      if (p.id !== id) return p;
+      const inch = this.pieceInches(p) || { w: p.wIn || 0, h: p.hIn || 0 };
+      const wIn = dim === 'w' ? n : inch.w, hIn = dim === 'h' ? n : inch.h;
+      return { ...p, mode: 'in', wIn, hIn };
+    }) }));
   }
 
   // ---- save / load config ----
@@ -1124,6 +1321,9 @@ class Component extends DCLogic {
     if (!a) return;
     if (a.type === 'lift') { const d = this.state.draft; if (d) { const rf = { x: Math.min(d.a.x, d.b.x), y: Math.min(d.a.y, d.b.y), w: Math.abs(d.b.x - d.a.x), h: Math.abs(d.b.y - d.a.y) }; this.createLift(rf); } }
     if (a.type === 'move') this.setState({ snap: [] });
+    // a handle-resize changed the piece's size without changing the selection — force
+    // the Selected-panel width/height fields to re-read the new dimensions
+    if (a.type === 'resize') { this._selSizeId = null; this.syncSelSizeFields(); }
   }
   handleKey(e) {
     const tag = (e.target && e.target.tagName) || '';
@@ -1134,7 +1334,8 @@ class Component extends DCLogic {
     if (mod && (e.key === 'c' || e.key === 'C')) { this.copySelected(); return; }
     if (mod && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); this.paste(); return; }
     if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); this.duplicateSelected(); return; }
-    if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.undo(); return; }
+    if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) this.redo(); else this.undo(); return; }
+    if (mod && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this.redo(); return; }
     const arrows = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
     if (arrows[e.key] && this.state.selectedIds.length) {
       e.preventDefault();
@@ -1160,6 +1361,21 @@ class Component extends DCLogic {
     const { x: ppiX, y: ppiY } = this.getPpiXY(); const ppi = (ppiX + ppiY) / 2; const ready = ppiX > 0 && ppiY > 0;
     const shadow = (this.props.pieceShadow ?? true) ? '0 8px 22px -8px rgba(0,0,0,0.42)' : 'none';
     const single = S.selectedIds.length === 1 ? S.selectedIds[0] : null;
+    const movingIds = (this.active && this.active.type === 'move') ? (this.active.group || []).map(g => g.id) : [];
+
+    // step-aware empty-state onboarding, shown over the stage until the scale is set
+    const stepRow = (n, text, state) => React.createElement('div', { key: 'ob' + n, style: { display: 'flex', alignItems: 'flex-start', gap: 11, marginBottom: n < 3 ? 11 : 0 } }, [
+      React.createElement('div', { key: 'b', style: { flex: '0 0 auto', width: 21, height: 21, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 11px system-ui', background: state === 'active' ? acc : '#eceae6', color: state === 'active' ? '#fff' : '#a8a49c' } }, String(n)),
+      React.createElement('div', { key: 't', style: { font: (state === 'active' ? '600' : '400') + ' 12.5px system-ui', color: state === 'active' ? '#1c1b19' : '#8b8880', lineHeight: 1.35, paddingTop: 2 } }, text),
+    ]);
+    const onboardingEl = (!ready && disp.w) ? React.createElement('div', {
+      style: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'rgba(255,255,255,0.97)', borderRadius: 14, boxShadow: '0 18px 50px -16px rgba(0,0,0,0.42)', padding: '20px 22px', width: 'min(320px,82%)', pointerEvents: 'none', border: '1px solid #ecebe8', animation: 'ap-piece-in 0.24s ease' },
+    }, [
+      React.createElement('div', { key: 'h', style: { font: '600 13.5px system-ui', color: '#1c1b19', marginBottom: 15, letterSpacing: '-0.01em' } }, 'Set up in three steps'),
+      stepRow(1, 'Snap or upload a photo of your wall', 'done'),
+      stepRow(2, 'Enter its real height to lock the scale', 'active'),
+      stepRow(3, 'Drop art on — it shows true-to-size', 'next'),
+    ]) : null;
 
     const pieces = S.pieces.map(p => {
       const sz = this.sizeFrac(p); const wpx = sz.w * disp.w, hpx = sz.h * disp.h;
@@ -1178,7 +1394,8 @@ class Component extends DCLogic {
           position: 'absolute', left: (p.fx * disp.w) + 'px', top: (p.fy * disp.h) + 'px', width: wpx + 'px', height: hpx + 'px',
           background: p.kind === 'rect' ? p.color : 'transparent',
           border: sel ? '2px solid ' + acc : '1px solid rgba(0,0,0,0.18)',
-          boxShadow: shadow, cursor: 'grab', touchAction: 'none', zIndex: sel ? 20 : 10, boxSizing: 'border-box',
+          boxShadow: shadow, cursor: movingIds.includes(p.id) ? 'grabbing' : 'grab', touchAction: 'none', zIndex: sel ? 20 : 10, boxSizing: 'border-box',
+          animation: 'ap-piece-in 0.18s ease',
         },
         onDown: (e) => this.pieceDown(p.id, e),
       };
@@ -1208,7 +1425,7 @@ class Component extends DCLogic {
         // all four connecting lines are drawn uniformly — no primary/secondary emphasis
         const gc = S.wallLocked ? '#4a4a4a' : acc;
         const line = { stroke: gc, strokeWidth: 1.2, strokeDasharray: '4 4', opacity: 0.6 };
-        const Tp = (x, y, v) => React.createElement('text', { x, y, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, fontWeight: 500, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke', textAnchor: 'middle', opacity: 0.85 }, this.fmt(v) + ' ' + S.unit);
+        const Tp = (x, y, v) => React.createElement('text', { x, y, fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 10.5, fontWeight: 500, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke', textAnchor: 'middle', opacity: 0.85 }, this.fmt(v) + ' ' + S.unit);
         // outline the group's bounding box when measuring a multi-selection
         if (selPieces.length > 1) gk.push(React.createElement('rect', { key: 'gbb', x: left, y: top, width: right - left, height: bottom - top, fill: 'none', stroke: gc, strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.7 }));
         // ceiling
@@ -1233,13 +1450,13 @@ class Component extends DCLogic {
       if (mv) {
         const GOLD = '#d6a418';
         const mg = this.computeMoveGuides((mv.group || []).map(g => g.id));
-        mg.aligns.forEach((l, i) => gk.push(React.createElement('line', { key: 'mva' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: GOLD, strokeWidth: 2, opacity: 0.95 })));
+        mg.aligns.forEach((l, i) => gk.push(React.createElement('line', { key: 'mva' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: GOLD, strokeWidth: 2, opacity: 0.95, style: { animation: 'ap-snap-flash 0.22s ease-out' } })));
         mg.dists.forEach((d, i) => {
           gk.push(React.createElement('line', { key: 'mvd' + i, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 }));
           // end caps
           if (d.horiz) { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1, y1: d.y1 - 4, x2: d.x1, y2: d.y1 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2, y1: d.y2 - 4, x2: d.x2, y2: d.y2 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
           else { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1 - 4, y1: d.y1, x2: d.x1 + 4, y2: d.y1, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2 - 4, y1: d.y2, x2: d.x2 + 4, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
-          gk.push(React.createElement('text', { key: 'mvdt' + i, x: d.mx, y: d.my + (d.horiz ? -5 : 0), fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, fontWeight: 600, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3.5, paintOrder: 'stroke', textAnchor: 'middle', dominantBaseline: d.horiz ? 'auto' : 'middle' }, this.fmt(d.val) + ' ' + S.unit));
+          gk.push(React.createElement('text', { key: 'mvdt' + i, x: d.mx, y: d.my + (d.horiz ? -5 : 0), fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 11, fontWeight: 600, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3.5, paintOrder: 'stroke', textAnchor: 'middle', dominantBaseline: d.horiz ? 'auto' : 'middle' }, this.fmt(d.val) + ' ' + S.unit));
         });
       }
     }
@@ -1282,9 +1499,9 @@ class Component extends DCLogic {
         chipStyle: p.kind === 'image' ? { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: '#f0efec center/cover', backgroundImage: 'url(' + p.src + ')' } : { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: p.color, border: '1px solid rgba(0,0,0,0.1)' } };
     });
 
-    const seg = (on) => ({ padding: '7px 11px', border: 'none', background: on ? acc : '#fff', color: on ? '#fff' : '#6b6863', font: "500 12px 'IBM Plex Mono',monospace", cursor: 'pointer' });
+    const seg = (on) => ({ padding: '7px 11px', border: 'none', background: on ? acc : '#fff', color: on ? '#fff' : '#6b6863', font: "500 12px ui-monospace,SFMono-Regular,Menlo,monospace", cursor: 'pointer' });
     const toggleStyle = (on) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 11px', marginBottom: 8, border: '1px solid #ecebe8', borderRadius: 8, background: '#fbfbfa', font: '500 13px system-ui', color: '#1c1b19', cursor: 'pointer' });
-    const pill = (on) => ({ font: "600 10px 'IBM Plex Mono',monospace", letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 20, background: on ? acc : '#e2e1de', color: on ? '#fff' : '#9a968f' });
+    const pill = (on) => ({ font: "600 10px ui-monospace,SFMono-Regular,Menlo,monospace", letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 20, background: on ? acc : '#e2e1de', color: on ? '#fff' : '#9a968f' });
     const primary = (disabled) => ({ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : acc), background: disabled ? '#f0efec' : acc, color: disabled ? '#c2beb6' : '#fff', font: '600 13px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
     const alignBtn = { flex: 1, padding: '7px 4px', border: '1px solid #e2e1de', background: '#fff', color: '#1c1b19', borderRadius: 6, font: '500 11.5px system-ui', cursor: 'pointer' };
     const gridBtn = (active, disabled) => ({ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, padding: '10px 8px', minHeight: 40, borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : (active ? acc : '#d9d7d2')), background: disabled ? '#f7f6f4' : (active ? 'rgba(74,99,166,0.08)' : '#fff'), color: disabled ? '#c2beb6' : (active ? acc : '#1c1b19'), font: '600 12.5px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
@@ -1295,7 +1512,7 @@ class Component extends DCLogic {
       onImgLoad: () => this.onImgLoad(), onWrapDown: () => this.onWrapDown(), onWrapDoubleClick: (e) => this.onWrapDoubleClick(e),
       guideLayer, wallLayer, pieces, patches,
       drawMode: S.liftMode || S.brushMode, onStageDown: (e) => this.onDrawStart(e),
-      catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(74,99,166,0.04)' : 'transparent' },
+      catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(74,99,166,0.04)' : 'transparent', touchAction: 'none' },
       brushCanvasStyle: { position: 'absolute', left: 0, top: 0, width: disp.w + 'px', height: disp.h + 'px', zIndex: 7, pointerEvents: 'none' },
       dispWInt: Math.round(disp.w) || 1, dispHInt: Math.round(disp.h) || 1,
       onCatcherMove: (e) => this.onCatcherMove(e), onCatcherLeave: () => this.onCatcherLeave(),
@@ -1303,8 +1520,9 @@ class Component extends DCLogic {
         style: { position: 'absolute', left: (S.brushCursor.x * disp.w) + 'px', top: (S.brushCursor.y * disp.h) + 'px', width: (S.brushSize * disp.w * 2) + 'px', height: (S.brushSize * disp.w * 2) + 'px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '1.5px dashed ' + acc, background: 'rgba(74,99,166,0.08)', pointerEvents: 'none', zIndex: 41 },
       }) : null,
 
-      showHint: !ready || (S.pieces.length === 0 && !S.liftMode && !S.brushMode),
-      hintText: !ready ? 'Set a wall-height estimate to begin.' : (S.brushMode ? (S.brushStrokeCount > 0 ? 'Painting — ' + S.brushStrokeCount + ' stroke' + (S.brushStrokeCount === 1 ? '' : 's') + ' so far. Click & drag over any spot to blend it in.' : 'Click and drag over any spot — color blends in from the surrounding wall as you paint.') : (S.liftMode ? 'Drag a box around the art already on the wall to lift it off.' : 'Add art, upload a photo, or lift the existing piece. Drag to arrange; shift-click for several.')),
+      onboardingEl,
+      showHint: ready && (S.brushMode || S.liftMode || S.pieces.length === 0),
+      hintText: (S.brushMode ? (S.brushStrokeCount > 0 ? 'Painting — ' + S.brushStrokeCount + ' stroke' + (S.brushStrokeCount === 1 ? '' : 's') + ' so far. Click & drag over any spot to blend it in.' : 'Click and drag over any spot — color blends in from the surrounding wall as you paint.') : (S.liftMode ? 'Drag a box around the art already on the wall to lift it off.' : 'Add art, upload a photo, or lift the existing piece. Drag to arrange; shift-click for several.')),
 
       scaleStatus: ready ? 'set' : 'not set',
       scaleStatusColor: ready ? '#3f7d4e' : '#c0392b',
@@ -1323,6 +1541,7 @@ class Component extends DCLogic {
       onUpload: (e) => this.onUpload(e),
       uploadStyle: gridBtn(false, false),
       hasUploadError: !!S.uploadError, uploadError: S.uploadError,
+      hasUploadNotice: !!S.uploadNotice, uploadNotice: S.uploadNotice,
       onLift: () => this.onLift(),
       liftLabel: S.liftMode ? 'Cancel lift' : 'Lift artwork',
       liftBtnStyle: gridBtn(S.liftMode, !ready),
@@ -1335,6 +1554,8 @@ class Component extends DCLogic {
       onClearBrush: () => this.onClearBrush(),
 
       hasSelection: S.selectedIds.length > 0, selCount: S.selectedIds.length, multiSel: S.selectedIds.length >= 2,
+      hasSingleSel: S.selectedIds.length === 1,
+      selWStr: S.selWStr, selHStr: S.selHStr, onSelWidth: (e) => this.onSelWidth(e), onSelHeight: (e) => this.onSelHeight(e),
       alignBtn,
       onAlignL: () => this.align('l'), onAlignCH: () => this.align('ch'), onAlignR: () => this.align('r'),
       onAlignT: () => this.align('t'), onAlignCV: () => this.align('cv'), onAlignB: () => this.align('b'),
