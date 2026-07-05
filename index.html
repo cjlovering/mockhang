@@ -10,25 +10,37 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<div id="ap-splash" style="position:fixed;inset:0;z-index:9999;background:#f4f3f1;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
+<div id="ap-splash" style="position:fixed;inset:0;z-index:9999;background:#faf4ed;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif">
   <div style="text-align:center">
-    <div style="width:26px;height:26px;margin:0 auto 14px;border:2.5px solid #e2e1de;border-top-color:#4a63a6;border-radius:50%;animation:ap-spin 0.7s linear infinite"></div>
-    <div style="font:600 16px system-ui;color:#1c1b19;letter-spacing:-0.01em">Art Placer</div>
-    <div style="font:400 12.5px system-ui;color:#9a968f;margin-top:4px">Loading…</div>
+    <div style="width:26px;height:26px;margin:0 auto 14px;border:2.5px solid #dfdad9;border-top-color:#286983;border-radius:50%;animation:ap-spin 0.7s linear infinite"></div>
+    <div style="font:600 16px system-ui;color:#575279;letter-spacing:-0.01em">Art Placer</div>
+    <div style="font:400 12.5px system-ui;color:#9893a5;margin-top:4px">Loading…</div>
   </div>
 </div>
 <x-dc>
 <helmet>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: #f4f3f1; }
+  html, body { margin: 0; height: 100%; background: #faf4ed; }
   input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
-  button { transition: filter 0.12s ease, background-color 0.12s ease; }
-  button:hover { filter: brightness(0.95); }
-  button:active { filter: brightness(0.9); }
-  label.btn-hover { transition: filter 0.12s ease; }
-  label.btn-hover:hover { filter: brightness(0.95); }
+  button { transition: filter 0.12s ease, background-color 0.12s ease, transform 0.06s ease, box-shadow 0.12s ease; }
+  button:hover { filter: brightness(0.96); }
+  button:active { filter: brightness(0.92); transform: translateY(0.5px); }
+  label.btn-hover { transition: filter 0.12s ease, transform 0.06s ease; }
+  label.btn-hover:hover { filter: brightness(0.96); }
+  label.btn-hover:active { transform: translateY(0.5px); }
+  /* accent focus ring on all text inputs (--accent lives on the app root) */
+  input { transition: border-color 0.12s ease, box-shadow 0.12s ease; }
+  input:focus, input:focus-visible {
+    border-color: var(--accent, #286983) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #286983) 15%, transparent);
+  }
+  /* quiet, thin scrollbar for the side panel */
+  .ap-panel { scrollbar-width: thin; scrollbar-color: #dfdad9 transparent; }
+  .ap-panel::-webkit-scrollbar { width: 8px; }
+  .ap-panel::-webkit-scrollbar-thumb { background: #dfdad9; border-radius: 8px; border: 2px solid #fff; }
+  .ap-panel::-webkit-scrollbar-thumb:hover { background: #cecacd; }
   #ap-splash { transition: opacity 0.25s ease; }
   @keyframes ap-spin { to { transform: rotate(360deg); } }
   @keyframes ap-piece-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
@@ -39,15 +51,15 @@
     .ap-root { flex-direction: column !important; height: auto !important; min-height: 100vh !important; }
     .ap-stage { flex: 0 0 auto !important; height: 54vh !important; padding: 12px !important; }
     .ap-stage img { max-height: calc(54vh - 24px) !important; }
-    .ap-panel { flex: 0 0 auto !important; width: 100% !important; height: auto !important; border-left: none !important; border-top: 1px solid #e6e5e2 !important; }
+    .ap-panel { flex: 0 0 auto !important; width: 100% !important; height: auto !important; border-left: none !important; border-top: 1px solid #dfdad9 !important; }
   }
 </style>
 </helmet>
 
-<div ref="{{ rootRef }}" class="ap-root" tabindex="0" style="display:flex;height:100vh;min-height:520px;width:100%;font-family:system-ui,-apple-system,sans-serif;color:#1c1b19;--accent:#4a63a6;background:#f4f3f1;outline:none">
+<div ref="{{ rootRef }}" class="ap-root" tabindex="0" style="display:flex;height:100vh;min-height:520px;width:100%;font-family:system-ui,-apple-system,sans-serif;color:#575279;--accent:#286983;background:#faf4ed;outline:none">
 
   <!-- ============ STAGE ============ -->
-  <div class="ap-stage" style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden">
+  <div class="ap-stage" style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;background:radial-gradient(circle at 50% 40%, #fffaf3 0%, #f2e9e1 100%)">
     <div ref="{{ wrapRef }}" onPointerDown="{{ onWrapDown }}" onDoubleClick="{{ onWrapDoubleClick }}" style="position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0;box-shadow:0 12px 40px -12px rgba(0,0,0,0.35);border-radius:2px;overflow:visible">
       <img ref="{{ imgRef }}" src="{{ wallSrc }}" onLoad="{{ onImgLoad }}" draggable="false" style="display:block;max-width:100%;max-height:calc(100vh - 56px);width:auto;height:auto;user-select:none;border-radius:2px" />
 
@@ -69,7 +81,7 @@
             <div style="{{ h.style }}" onPointerDown="{{ h.onDown }}"></div>
           </sc-for>
           <sc-if value="{{ p.showLabel }}" hint-placeholder-val="{{ true }}">
-            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#1c1b19;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.12);max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#575279;background:rgba(255,255,255,0.92);padding:2px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.12);max-width:calc(100% - 10px);overflow:hidden;text-overflow:ellipsis">{{ p.label }}</div>
           </sc-if>
         </div>
       </sc-for>
@@ -88,38 +100,41 @@
   </div>
 
   <!-- ============ PANEL ============ -->
-  <div class="ap-panel" style="flex:0 0 322px;width:322px;height:100vh;overflow-y:auto;background:#fff;border-left:1px solid #e6e5e2;padding:20px 18px 40px;display:flex;flex-direction:column;gap:16px">
+  <div class="ap-panel" style="flex:0 0 322px;width:322px;height:100vh;overflow-y:auto;background:#fff;border-left:1px solid #dfdad9;padding:20px 18px 40px;display:flex;flex-direction:column;gap:16px">
 
     <div>
-      <div style="font:600 15px system-ui;letter-spacing:-0.01em">Art Placer</div>
-      <div style="font:400 12px system-ui;color:#9a968f;margin-top:2px">Arrange art on your wall, to scale.</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:14px;height:14px;border-radius:4px;background:var(--accent);box-shadow:0 1px 3px rgba(40,105,131,0.4);flex:0 0 auto"></span>
+        <div style="font:600 15px system-ui;letter-spacing:-0.01em">Art Placer</div>
+      </div>
+      <div style="font:400 12px system-ui;color:#9893a5;margin-top:3px">Arrange art on your wall, to scale.</div>
     </div>
 
     <!-- SCALE -->
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
-        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f">1 · Scale</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5">1 · Scale</div>
         <div style="font:500 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:{{ scaleStatusColor }}">{{ scaleStatus }}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 66px auto;gap:8px 8px;align-items:center;margin-bottom:11px">
-        <div style="font:400 11.5px system-ui;color:#6b6863">Wall height</div>
-        <input type="number" value="{{ wallHeightStr }}" onChange="{{ onWallHeight }}" onDoubleClick="{{ selectAll }}" style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none;text-align:right" />
-        <div style="display:flex;border:1px solid #e2e1de;border-radius:7px;overflow:hidden">
+        <div style="font:400 11.5px system-ui;color:#797593">Wall height</div>
+        <input type="number" value="{{ wallHeightStr }}" onChange="{{ onWallHeight }}" onDoubleClick="{{ selectAll }}" style="width:66px;padding:7px 9px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none;text-align:right" />
+        <div style="display:flex;border:1px solid #dfdad9;border-radius:7px;overflow:hidden">
           <button onClick="{{ onUnitIn }}" style="{{ unitInStyle }}">in</button>
           <button onClick="{{ onUnitCm }}" style="{{ unitCmStyle }}">cm</button>
         </div>
-        <div style="font:400 11.5px system-ui;color:#6b6863">Wall width</div>
-        <input type="number" value="{{ wallWidthStr }}" onChange="{{ onWallWidth }}" onDoubleClick="{{ selectAll }}" placeholder="opt." style="width:66px;padding:7px 9px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none;text-align:right" />
+        <div style="font:400 11.5px system-ui;color:#797593">Wall width</div>
+        <input type="number" value="{{ wallWidthStr }}" onChange="{{ onWallWidth }}" onDoubleClick="{{ selectAll }}" placeholder="opt." style="width:66px;padding:7px 9px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none;text-align:right" />
         <button onClick="{{ onToggleLock }}" title="{{ lockTitle }}" style="{{ lockBtnStyle }}">{{ lockLabel }}</button>
       </div>
     </div>
 
-    <div style="height:1px;background:#efeeeb"></div>
+    <div style="height:1px;background:#f4ede8"></div>
 
     <!-- ADD ART -->
     <div>
-      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">2 · Add art</div>
+      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5;margin-bottom:11px">2 · Add art</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
         <button onClick="{{ onToggleRectOptions }}" style="{{ addRectBtnStyle }}">Add rectangle</button>
@@ -132,23 +147,23 @@
       </div>
 
       <sc-if value="{{ hasUploadError }}" hint-placeholder-val="{{ false }}">
-        <div style="font:400 11px system-ui;color:#c0392b;margin-bottom:9px;line-height:1.4;background:#fdf1ef;border:1px solid #f2d3ce;border-radius:7px;padding:8px 9px">{{ uploadError }}</div>
+        <div style="font:400 11px system-ui;color:#b4637a;margin-bottom:9px;line-height:1.4;background:#fdf1ef;border:1px solid #f2d3ce;border-radius:7px;padding:8px 9px">{{ uploadError }}</div>
       </sc-if>
 
       <sc-if value="{{ hasUploadNotice }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;align-items:center;gap:8px;font:500 11.5px system-ui;color:#6b6863;margin-bottom:9px;background:#f5f4f2;border:1px solid #e6e5e2;border-radius:7px;padding:8px 10px"><span style="width:13px;height:13px;border:2px solid #d9d7d2;border-top-color:var(--accent);border-radius:50%;animation:ap-spin 0.7s linear infinite;flex:0 0 auto"></span>{{ uploadNotice }}</div>
+        <div style="display:flex;align-items:center;gap:8px;font:500 11.5px system-ui;color:#797593;margin-bottom:9px;background:#f4ede8;border:1px solid #dfdad9;border-radius:7px;padding:8px 10px"><span style="width:13px;height:13px;border:2px solid #dfdad9;border-top-color:var(--accent);border-radius:50%;animation:ap-spin 0.7s linear infinite;flex:0 0 auto"></span>{{ uploadNotice }}</div>
       </sc-if>
 
       <sc-if value="{{ showRectOptions }}" hint-placeholder-val="{{ false }}">
-        <div style="margin-bottom:9px;padding:9px 10px;border:1px solid #ecebe8;border-radius:8px;background:#fbfbfa">
+        <div style="margin-bottom:9px;padding:9px 10px;border:1px solid #dfdad9;border-radius:8px;background:#faf4ed">
           <div style="display:flex;gap:8px;margin-bottom:9px">
             <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
-              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
+              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
             </label>
             <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
-              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
+              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
             </label>
           </div>
 
@@ -163,13 +178,13 @@
       </sc-if>
 
       <sc-if value="{{ showBrushControls }}" hint-placeholder-val="{{ false }}">
-        <div style="margin-top:8px;padding:9px 10px;border:1px solid #ecebe8;border-radius:8px;background:#fbfbfa">
+        <div style="margin-top:8px;padding:9px 10px;border:1px solid #dfdad9;border-radius:8px;background:#faf4ed">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div style="flex:1;font:400 11.5px system-ui;color:#6b6863">Brush size</div>
+            <div style="flex:1;font:400 11.5px system-ui;color:#797593">Brush size</div>
             <input type="range" min="0.012" max="0.09" step="0.002" value="{{ brushSize }}" onChange="{{ onBrushSize }}" style="flex:1.4" />
           </div>
-          <button onClick="{{ onClearBrush }}" style="width:100%;padding:7px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:7px;font:600 12px system-ui;cursor:pointer">Clear brush strokes</button>
-          <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:7px;line-height:1.4">Paints with a color blended from the wall texture around the brush — good for touching up the seam after lifting art, or covering small blemishes.</div>
+          <button onClick="{{ onClearBrush }}" style="width:100%;padding:7px;border:1px solid #dfdad9;background:#fff;color:#575279;border-radius:7px;font:600 12px system-ui;cursor:pointer">Clear brush strokes</button>
+          <div style="font:400 10.5px system-ui;color:#9893a5;margin-top:7px;line-height:1.4">Paints with a color blended from the wall texture around the brush — good for touching up the seam after lifting art, or covering small blemishes.</div>
         </div>
       </sc-if>
     </div>
@@ -177,11 +192,11 @@
     <!-- LIBRARY -->
     <sc-if value="{{ hasLibrary }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="height:1px;background:#efeeeb;margin-bottom:22px"></div>
-        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Library · {{ libraryCount }}</div>
+        <div style="height:1px;background:#f4ede8;margin-bottom:22px"></div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5;margin-bottom:11px">Library · {{ libraryCount }}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <sc-for list="{{ libraryRows }}" as="lb" hint-placeholder-count="0">
-            <div onClick="{{ lb.onPlace }}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid #efeeeb;background:#fff;min-width:0">
+            <div onClick="{{ lb.onPlace }}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid #f4ede8;background:#fff;min-width:0">
               <div style="{{ lb.thumbStyle }}"></div>
               <div style="flex:1;min-width:0">
                 <sc-if value="{{ lb.editing }}" hint-placeholder-val="{{ false }}">
@@ -190,9 +205,9 @@
                 <sc-if value="{{ lb.notEditing }}" hint-placeholder-val="{{ true }}">
                   <div onDoubleClick="{{ lb.onStartRename }}" style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lb.name }}</div>
                 </sc-if>
-                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9a968f">{{ lb.dims }}</div>
+                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9893a5">{{ lb.dims }}</div>
               </div>
-              <button onClick="{{ lb.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
+              <button onClick="{{ lb.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#cecacd;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
             </div>
           </sc-for>
         </div>
@@ -202,10 +217,10 @@
     <!-- SELECTION -->
     <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:10px">Selected · {{ selCount }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5;margin-bottom:10px">Selected · {{ selCount }}</div>
         <sc-if value="{{ multiSel }}" hint-placeholder-val="{{ false }}">
           <div style="margin-bottom:9px">
-            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em">Align</div>
+            <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em">Align</div>
             <div style="display:flex;gap:5px;margin-bottom:5px">
               <button onClick="{{ onAlignL }}" style="{{ alignBtn }}">Left</button>
               <button onClick="{{ onAlignCH }}" style="{{ alignBtn }}">Center</button>
@@ -225,12 +240,12 @@
         <sc-if value="{{ hasSingleSel }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;gap:8px;margin-bottom:9px">
             <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
-              <input type="number" value="{{ selWStr }}" onChange="{{ onSelWidth }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
+              <input type="number" value="{{ selWStr }}" onChange="{{ onSelWidth }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none" />
             </label>
             <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
-              <input type="number" value="{{ selHStr }}" onChange="{{ onSelHeight }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
+              <input type="number" value="{{ selHStr }}" onChange="{{ onSelHeight }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none" />
             </label>
           </div>
         </sc-if>
@@ -238,15 +253,15 @@
           <button onClick="{{ onDuplicate }}" style="{{ selActionBtn }}">Duplicate</button>
           <button onClick="{{ onDeleteSel }}" style="{{ selDeleteBtn }}">Delete</button>
         </div>
-        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
+        <div style="font:400 10.5px system-ui;color:#9893a5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
       </div>
     </sc-if>
 
-    <div style="height:1px;background:#efeeeb"></div>
+    <div style="height:1px;background:#f4ede8"></div>
 
     <!-- DISPLAY -->
     <div>
-      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">Display</div>
+      <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5;margin-bottom:11px">Display</div>
       <button onClick="{{ onToggleDims }}" style="{{ dimsToggleStyle }}"><span>Dimension labels</span><span style="{{ dimsPillStyle }}">{{ dimsPillText }}</span></button>
       <button onClick="{{ onToggleGuides }}" style="{{ guidesToggleStyle }}"><span>Alignment guides</span><span style="{{ guidesPillStyle }}">{{ guidesPillText }}</span></button>
       <button onClick="{{ onToggleWall }}" style="{{ wallToggleStyle }}"><span>Wall bounds</span><span style="{{ wallPillStyle }}">{{ wallPillText }}</span></button>
@@ -255,16 +270,16 @@
     <!-- PIECES -->
     <sc-if value="{{ hasPieces }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9a968f;margin-bottom:11px">On the wall · {{ pieceCount }}</div>
+        <div style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;text-transform:uppercase;color:#9893a5;margin-bottom:11px">On the wall · {{ pieceCount }}</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <sc-for list="{{ pieceRows }}" as="r" hint-placeholder-count="0">
             <div onClick="{{ r.onSelect }}" style="{{ r.style }}">
               <div style="{{ r.chipStyle }}"></div>
               <div style="flex:1;min-width:0">
                 <div style="font:500 12.5px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
-                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9a968f">{{ r.dims }}</div>
+                <div style="font:400 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9893a5">{{ r.dims }}</div>
               </div>
-              <button onClick="{{ r.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#c2beb6;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
+              <button onClick="{{ r.onDelete }}" style="flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:#cecacd;font-size:17px;cursor:pointer;border-radius:6px;line-height:1">×</button>
             </div>
           </sc-for>
         </div>
@@ -274,28 +289,28 @@
     <div style="flex:1"></div>
 
     <div style="display:flex;align-items:center;justify-content:flex-end;height:14px;margin-bottom:-6px">
-      <span id="ap-saved" style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.06em;color:#3f7d4e;opacity:0">Saved ✓</span>
+      <span id="ap-saved" style="font:600 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.06em;color:#56949f;opacity:0">Saved ✓</span>
     </div>
 
     <div style="display:flex;gap:6px">
-      <button onClick="{{ onSaveConfig }}" style="flex:1;padding:9px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 12px system-ui;cursor:pointer">Save config</button>
-      <label class="btn-hover" style="flex:1;display:flex;align-items:center;justify-content:center;padding:9px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 12px system-ui;cursor:pointer">
+      <button onClick="{{ onSaveConfig }}" style="flex:1;padding:9px;border:1px solid #dfdad9;background:#fff;color:#575279;border-radius:8px;font:600 12px system-ui;cursor:pointer">Save config</button>
+      <label class="btn-hover" style="flex:1;display:flex;align-items:center;justify-content:center;padding:9px;border:1px solid #dfdad9;background:#fff;color:#575279;border-radius:8px;font:600 12px system-ui;cursor:pointer">
         <span>Load config</span>
         <input type="file" accept="application/json" onChange="{{ onLoadConfig }}" style="display:none" />
       </label>
     </div>
-    <div style="font:400 10.5px system-ui;color:#b0aca5;line-height:1.4;margin-top:-8px">Your work saves automatically in this browser. Use <b style="font-weight:600">Save config</b> to back it up or move it to another device.</div>
+    <div style="font:400 10.5px system-ui;color:#9893a5;line-height:1.4;margin-top:-8px">Your work saves automatically in this browser. Use <b style="font-weight:600">Save config</b> to back it up or move it to another device.</div>
 
     <sc-if value="{{ hasWallHistory }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex;align-items:center;gap:6px">
-        <div style="font:400 10.5px system-ui;color:#b0aca5;margin-right:2px">Recent:</div>
+        <div style="font:400 10.5px system-ui;color:#9893a5;margin-right:2px">Recent:</div>
         <sc-for list="{{ wallHistoryRows }}" as="wh" hint-placeholder-count="0">
           <button onClick="{{ wh.onRestore }}" style="{{ wh.style }}"></button>
         </sc-for>
       </div>
     </sc-if>
 
-    <label class="btn-hover" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;border:1px solid #e2e1de;border-radius:7px;font:500 11.5px system-ui;color:#6b6863;cursor:pointer;align-self:flex-start">
+    <label class="btn-hover" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;border:1px solid #dfdad9;border-radius:7px;font:500 11.5px system-ui;color:#797593;cursor:pointer;align-self:flex-start">
       <span>Replace wall photo</span>
       <input type="file" accept="image/*" capture="environment" onChange="{{ onReplaceWall }}" style="display:none" />
     </label>
@@ -306,9 +321,9 @@
     <div style="position:fixed;inset:0;z-index:200;background:rgba(24,23,21,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:24px">
       <div style="background:#fff;border-radius:14px;padding:20px;width:min(560px,94vw);max-height:92vh;overflow:auto;box-shadow:0 24px 60px -12px rgba(0,0,0,0.5)">
         <div style="font:600 15px system-ui;margin-bottom:4px">Crop artwork</div>
-        <div style="font:400 12px system-ui;color:#9a968f;margin-bottom:14px">Drag the box to the edges of the art, then enter its real size.</div>
+        <div style="font:400 12px system-ui;color:#9893a5;margin-bottom:14px">Drag the box to the edges of the art, then enter its real size.</div>
 
-        <div ref="{{ cropRef }}" style="position:relative;display:inline-block;line-height:0;max-width:100%;background:#f4f3f1;border-radius:8px;overflow:hidden;user-select:none">
+        <div ref="{{ cropRef }}" style="position:relative;display:inline-block;line-height:0;max-width:100%;background:#faf4ed;border-radius:8px;overflow:hidden;user-select:none">
           <img src="{{ cropSrc }}" draggable="false" style="display:block;max-width:100%;max-height:46vh;width:auto;height:auto" />
           <div onPointerDown="{{ onCropBoxDown }}" style="{{ cropBoxStyle }}">
             <div onPointerDown="{{ onCropNW }}" style="position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--accent);cursor:nwse-resize"></div>
@@ -320,17 +335,17 @@
 
         <div style="display:flex;gap:8px;align-items:flex-end;margin-top:16px">
           <label style="flex:1">
-            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real width ({{ unit }})</div>
-            <input type="number" value="{{ cropW }}" onChange="{{ onCropW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+            <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real width ({{ unit }})</div>
+            <input type="number" value="{{ cropW }}" onChange="{{ onCropW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none" />
           </label>
           <label style="flex:1">
-            <div style="font:500 10px system-ui;color:#9a968f;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real height ({{ unit }})</div>
-            <input type="number" value="{{ cropH }}" onChange="{{ onCropH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #e2e1de;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fbfbfa;outline:none" />
+            <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Real height ({{ unit }})</div>
+            <input type="number" value="{{ cropH }}" onChange="{{ onCropH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#faf4ed;outline:none" />
           </label>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:16px">
-          <button onClick="{{ onCropCancel }}" style="flex:0 0 auto;padding:9px 16px;border:1px solid #e2e1de;background:#fff;color:#1c1b19;border-radius:8px;font:600 13px system-ui;cursor:pointer">Cancel</button>
+          <button onClick="{{ onCropCancel }}" style="flex:0 0 auto;padding:9px 16px;border:1px solid #dfdad9;background:#fff;color:#575279;border-radius:8px;font:600 13px system-ui;cursor:pointer">Cancel</button>
           <button onClick="{{ onCropConfirm }}" style="flex:1;padding:9px 16px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;font:600 13px system-ui;cursor:pointer">Add to wall</button>
         </div>
       </div>
@@ -339,7 +354,7 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4a63a6&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#4a63a6&quot;,&quot;#3f7d6e&quot;,&quot;#a15c4a&quot;,&quot;#6b6f76&quot;],&quot;section&quot;:&quot;Style&quot;},&quot;pieceShadow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Style&quot;},&quot;defaultUnit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;in&quot;,&quot;options&quot;:[&quot;in&quot;,&quot;cm&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Setup&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#286983&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#286983&quot;,&quot;#56949f&quot;,&quot;#a15c4a&quot;,&quot;#6b6f76&quot;],&quot;section&quot;:&quot;Style&quot;},&quot;pieceShadow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Style&quot;},&quot;defaultUnit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;in&quot;,&quot;options&quot;:[&quot;in&quot;,&quot;cm&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Setup&quot;}}">
 class Component extends DCLogic {
   rootRef = React.createRef();
   wrapRef = React.createRef();
@@ -602,7 +617,7 @@ class Component extends DCLogic {
     } catch (e) {}
   }
   applyVars() { if (this.rootRef.current) this.rootRef.current.style.setProperty('--accent', this.accent()); }
-  accent() { return this.props.accent || '#4a63a6'; }
+  accent() { return this.props.accent || '#286983'; }
 
   measure() { const el = this.wrapRef.current; if (el) { const r = el.getBoundingClientRect(); if (r.width) this.setState({ disp: { w: r.width, h: r.height } }); } }
   onImgLoad() { this.measure(); this.buildWallCanvas(); }
@@ -841,7 +856,7 @@ class Component extends DCLogic {
 
   // small perpendicular ruler ticks along a guide/measurement line
   tickMarks(x1, y1, x2, y2, opts) {
-    opts = opts || {}; const spacing = opts.spacing || 13, len = opts.len || 3, color = opts.color || '#1c1b19', opacity = opts.opacity != null ? opts.opacity : 0.4;
+    opts = opts || {}; const spacing = opts.spacing || 13, len = opts.len || 3, color = opts.color || '#575279', opacity = opts.opacity != null ? opts.opacity : 0.4;
     const dx = x2 - x1, dy = y2 - y1, length = Math.hypot(dx, dy); if (length < spacing) return [];
     const ux = dx / length, uy = dy / length, px = -uy, py = ux; const n = Math.floor(length / spacing); const out = [];
     for (let i = 1; i < n; i++) { const t = i * spacing, cx = x1 + ux * t, cy = y1 + uy * t; out.push(React.createElement('line', { key: (opts.keyPrefix || 't') + i, x1: cx - px * len, y1: cy - py * len, x2: cx + px * len, y2: cy + py * len, stroke: color, strokeWidth: 1, opacity })); }
@@ -1365,13 +1380,13 @@ class Component extends DCLogic {
 
     // step-aware empty-state onboarding, shown over the stage until the scale is set
     const stepRow = (n, text, state) => React.createElement('div', { key: 'ob' + n, style: { display: 'flex', alignItems: 'flex-start', gap: 11, marginBottom: n < 3 ? 11 : 0 } }, [
-      React.createElement('div', { key: 'b', style: { flex: '0 0 auto', width: 21, height: 21, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 11px system-ui', background: state === 'active' ? acc : '#eceae6', color: state === 'active' ? '#fff' : '#a8a49c' } }, String(n)),
-      React.createElement('div', { key: 't', style: { font: (state === 'active' ? '600' : '400') + ' 12.5px system-ui', color: state === 'active' ? '#1c1b19' : '#8b8880', lineHeight: 1.35, paddingTop: 2 } }, text),
+      React.createElement('div', { key: 'b', style: { flex: '0 0 auto', width: 21, height: 21, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 11px system-ui', background: state === 'active' ? acc : '#f2e9e1', color: state === 'active' ? '#fff' : '#9893a5' } }, String(n)),
+      React.createElement('div', { key: 't', style: { font: (state === 'active' ? '600' : '400') + ' 12.5px system-ui', color: state === 'active' ? '#575279' : '#797593', lineHeight: 1.35, paddingTop: 2 } }, text),
     ]);
     const onboardingEl = (!ready && disp.w) ? React.createElement('div', {
-      style: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'rgba(255,255,255,0.97)', borderRadius: 14, boxShadow: '0 18px 50px -16px rgba(0,0,0,0.42)', padding: '20px 22px', width: 'min(320px,82%)', pointerEvents: 'none', border: '1px solid #ecebe8', animation: 'ap-piece-in 0.24s ease' },
+      style: { position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'rgba(255,255,255,0.97)', borderRadius: 14, boxShadow: '0 18px 50px -16px rgba(0,0,0,0.42)', padding: '20px 22px', width: 'min(320px,82%)', pointerEvents: 'none', border: '1px solid #dfdad9', animation: 'ap-piece-in 0.24s ease' },
     }, [
-      React.createElement('div', { key: 'h', style: { font: '600 13.5px system-ui', color: '#1c1b19', marginBottom: 15, letterSpacing: '-0.01em' } }, 'Set up in three steps'),
+      React.createElement('div', { key: 'h', style: { font: '600 13.5px system-ui', color: '#575279', marginBottom: 15, letterSpacing: '-0.01em' } }, 'Set up in three steps'),
       stepRow(1, 'Snap or upload a photo of your wall', 'done'),
       stepRow(2, 'Enter its real height to lock the scale', 'active'),
       stepRow(3, 'Drop art on — it shows true-to-size', 'next'),
@@ -1411,7 +1426,7 @@ class Component extends DCLogic {
     // guide layer (draft, snap lines, floor/wall annotations)
     const gk = [];
     if (disp.w) {
-      if (S.draft) { const d = S.draft; const x = Math.min(d.a.x, d.b.x) * disp.w, y = Math.min(d.a.y, d.b.y) * disp.h, w = Math.abs(d.b.x - d.a.x) * disp.w, h = Math.abs(d.b.y - d.a.y) * disp.h; gk.push(React.createElement('rect', { key: 'draft', x, y, width: w, height: h, fill: 'rgba(74,99,166,0.12)', stroke: acc, strokeWidth: 1.5, strokeDasharray: '5 4' })); }
+      if (S.draft) { const d = S.draft; const x = Math.min(d.a.x, d.b.x) * disp.w, y = Math.min(d.a.y, d.b.y) * disp.h, w = Math.abs(d.b.x - d.a.x) * disp.w, h = Math.abs(d.b.y - d.a.y) * disp.h; gk.push(React.createElement('rect', { key: 'draft', x, y, width: w, height: h, fill: 'rgba(40,105,131,0.12)', stroke: acc, strokeWidth: 1.5, strokeDasharray: '5 4' })); }
       if (S.showAlignGrid) this.computeAlignGuides().forEach((l, i) => { gk.push(React.createElement('line', { key: 'ag' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: acc, strokeWidth: 1, strokeDasharray: '1 5', opacity: 0.55 })); gk.push(...this.tickMarks(l.x1, l.y1, l.x2, l.y2, { color: acc, opacity: 0.35, spacing: 16, keyPrefix: 'agk' + i + '_' })); });
       const selPieces = S.pieces.filter(p => S.selectedIds.includes(p.id));
       if (S.showSpacing && selPieces.length && ready) {
@@ -1425,7 +1440,7 @@ class Component extends DCLogic {
         // all four connecting lines are drawn uniformly — no primary/secondary emphasis
         const gc = S.wallLocked ? '#4a4a4a' : acc;
         const line = { stroke: gc, strokeWidth: 1.2, strokeDasharray: '4 4', opacity: 0.6 };
-        const Tp = (x, y, v) => React.createElement('text', { x, y, fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 10.5, fontWeight: 500, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke', textAnchor: 'middle', opacity: 0.85 }, this.fmt(v) + ' ' + S.unit);
+        const Tp = (x, y, v) => React.createElement('text', { x, y, fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 10.5, fontWeight: 500, fill: '#575279', stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke', textAnchor: 'middle', opacity: 0.85 }, this.fmt(v) + ' ' + S.unit);
         // outline the group's bounding box when measuring a multi-selection
         if (selPieces.length > 1) gk.push(React.createElement('rect', { key: 'gbb', x: left, y: top, width: right - left, height: bottom - top, fill: 'none', stroke: gc, strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.7 }));
         // ceiling
@@ -1448,15 +1463,15 @@ class Component extends DCLogic {
       // ---- move guides: inter-piece distances + orange alignment highlights ----
       const mv = this.active && this.active.type === 'move' ? this.active : null;
       if (mv) {
-        const GOLD = '#d6a418';
+        const GOLD = '#ea9d34';
         const mg = this.computeMoveGuides((mv.group || []).map(g => g.id));
         mg.aligns.forEach((l, i) => gk.push(React.createElement('line', { key: 'mva' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: GOLD, strokeWidth: 2, opacity: 0.95, style: { animation: 'ap-snap-flash 0.22s ease-out' } })));
         mg.dists.forEach((d, i) => {
-          gk.push(React.createElement('line', { key: 'mvd' + i, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 }));
+          gk.push(React.createElement('line', { key: 'mvd' + i, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, stroke: '#575279', strokeWidth: 1, opacity: 0.75 }));
           // end caps
-          if (d.horiz) { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1, y1: d.y1 - 4, x2: d.x1, y2: d.y1 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2, y1: d.y2 - 4, x2: d.x2, y2: d.y2 + 4, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
-          else { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1 - 4, y1: d.y1, x2: d.x1 + 4, y2: d.y1, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2 - 4, y1: d.y2, x2: d.x2 + 4, y2: d.y2, stroke: '#1c1b19', strokeWidth: 1, opacity: 0.75 })); }
-          gk.push(React.createElement('text', { key: 'mvdt' + i, x: d.mx, y: d.my + (d.horiz ? -5 : 0), fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 11, fontWeight: 600, fill: '#1c1b19', stroke: '#fff', strokeWidth: 3.5, paintOrder: 'stroke', textAnchor: 'middle', dominantBaseline: d.horiz ? 'auto' : 'middle' }, this.fmt(d.val) + ' ' + S.unit));
+          if (d.horiz) { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1, y1: d.y1 - 4, x2: d.x1, y2: d.y1 + 4, stroke: '#575279', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2, y1: d.y2 - 4, x2: d.x2, y2: d.y2 + 4, stroke: '#575279', strokeWidth: 1, opacity: 0.75 })); }
+          else { gk.push(React.createElement('line', { key: 'mvdc1' + i, x1: d.x1 - 4, y1: d.y1, x2: d.x1 + 4, y2: d.y1, stroke: '#575279', strokeWidth: 1, opacity: 0.75 })); gk.push(React.createElement('line', { key: 'mvdc2' + i, x1: d.x2 - 4, y1: d.y2, x2: d.x2 + 4, y2: d.y2, stroke: '#575279', strokeWidth: 1, opacity: 0.75 })); }
+          gk.push(React.createElement('text', { key: 'mvdt' + i, x: d.mx, y: d.my + (d.horiz ? -5 : 0), fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 11, fontWeight: 600, fill: '#575279', stroke: '#fff', strokeWidth: 3.5, paintOrder: 'stroke', textAnchor: 'middle', dominantBaseline: d.horiz ? 'auto' : 'middle' }, this.fmt(d.val) + ' ' + S.unit));
         });
       }
     }
@@ -1489,22 +1504,22 @@ class Component extends DCLogic {
 
 
 
-    const swatches = this.swatchColors.map(c => ({ onPick: () => this.pickColor(c), style: { flex: 1, height: 26, borderRadius: 6, background: c, cursor: 'pointer', border: c === S.rectColor ? '2px solid #1c1b19' : '1px solid rgba(0,0,0,0.12)', padding: 0 } }));
+    const swatches = this.swatchColors.map(c => ({ onPick: () => this.pickColor(c), style: { flex: 1, height: 26, borderRadius: 6, background: c, cursor: 'pointer', border: c === S.rectColor ? '2px solid #575279' : '1px solid rgba(0,0,0,0.12)', padding: 0 } }));
 
     const pieceRows = S.pieces.map((p, i) => { const sel = S.selectedIds.includes(p.id); const inch = this.pieceInches(p);
       return { onSelect: (e) => this.rowSelect(p.id, e), onDelete: (e) => this.deletePiece(p.id, e),
         name: (p.kind === 'image' ? (p.mode === 'frac' ? 'Lifted art ' : 'Artwork ') : 'Rectangle ') + (i + 1),
         dims: inch ? (this.fmt(inch.w) + ' × ' + this.fmt(inch.h) + ' ' + S.unit) : '—',
-        style: { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderRadius: 8, cursor: 'pointer', border: '1px solid ' + (sel ? acc : '#efeeeb'), background: sel ? 'rgba(74,99,166,0.05)' : '#fff' },
-        chipStyle: p.kind === 'image' ? { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: '#f0efec center/cover', backgroundImage: 'url(' + p.src + ')' } : { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: p.color, border: '1px solid rgba(0,0,0,0.1)' } };
+        style: { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderRadius: 8, cursor: 'pointer', border: '1px solid ' + (sel ? acc : '#f4ede8'), background: sel ? 'rgba(40,105,131,0.05)' : '#fff' },
+        chipStyle: p.kind === 'image' ? { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: '#f4ede8 center/cover', backgroundImage: 'url(' + p.src + ')' } : { flex: '0 0 auto', width: 30, height: 30, borderRadius: 5, background: p.color, border: '1px solid rgba(0,0,0,0.1)' } };
     });
 
-    const seg = (on) => ({ padding: '7px 11px', border: 'none', background: on ? acc : '#fff', color: on ? '#fff' : '#6b6863', font: "500 12px ui-monospace,SFMono-Regular,Menlo,monospace", cursor: 'pointer' });
-    const toggleStyle = (on) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 11px', marginBottom: 8, border: '1px solid #ecebe8', borderRadius: 8, background: '#fbfbfa', font: '500 13px system-ui', color: '#1c1b19', cursor: 'pointer' });
-    const pill = (on) => ({ font: "600 10px ui-monospace,SFMono-Regular,Menlo,monospace", letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 20, background: on ? acc : '#e2e1de', color: on ? '#fff' : '#9a968f' });
-    const primary = (disabled) => ({ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : acc), background: disabled ? '#f0efec' : acc, color: disabled ? '#c2beb6' : '#fff', font: '600 13px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
-    const alignBtn = { flex: 1, padding: '7px 4px', border: '1px solid #e2e1de', background: '#fff', color: '#1c1b19', borderRadius: 6, font: '500 11.5px system-ui', cursor: 'pointer' };
-    const gridBtn = (active, disabled) => ({ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, padding: '10px 8px', minHeight: 40, borderRadius: 8, border: '1px solid ' + (disabled ? '#e2e1de' : (active ? acc : '#d9d7d2')), background: disabled ? '#f7f6f4' : (active ? 'rgba(74,99,166,0.08)' : '#fff'), color: disabled ? '#c2beb6' : (active ? acc : '#1c1b19'), font: '600 12.5px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
+    const seg = (on) => ({ padding: '7px 11px', border: 'none', background: on ? acc : '#fff', color: on ? '#fff' : '#797593', font: "500 12px ui-monospace,SFMono-Regular,Menlo,monospace", cursor: 'pointer' });
+    const toggleStyle = (on) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 11px', marginBottom: 8, border: '1px solid #dfdad9', borderRadius: 8, background: '#faf4ed', font: '500 13px system-ui', color: '#575279', cursor: 'pointer' });
+    const pill = (on) => ({ font: "600 10px ui-monospace,SFMono-Regular,Menlo,monospace", letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 20, background: on ? acc : '#dfdad9', color: on ? '#fff' : '#9893a5' });
+    const primary = (disabled) => ({ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid ' + (disabled ? '#dfdad9' : acc), background: disabled ? '#f4ede8' : acc, color: disabled ? '#cecacd' : '#fff', font: '600 13px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
+    const alignBtn = { flex: 1, padding: '7px 4px', border: '1px solid #dfdad9', background: '#fff', color: '#575279', borderRadius: 6, font: '500 11.5px system-ui', cursor: 'pointer' };
+    const gridBtn = (active, disabled) => ({ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6, padding: '10px 8px', minHeight: 40, borderRadius: 8, border: '1px solid ' + (disabled ? '#dfdad9' : (active ? acc : '#dfdad9')), background: disabled ? '#f4ede8' : (active ? 'rgba(40,105,131,0.08)' : '#fff'), color: disabled ? '#cecacd' : (active ? acc : '#575279'), font: '600 12.5px system-ui', cursor: disabled ? 'not-allowed' : 'pointer' });
 
     return {
       rootRef: this.rootRef, wrapRef: this.wrapRef, cropRef: this.cropRef, imgRef: this.imgRef, brushRef: this.brushRef,
@@ -1512,12 +1527,12 @@ class Component extends DCLogic {
       onImgLoad: () => this.onImgLoad(), onWrapDown: () => this.onWrapDown(), onWrapDoubleClick: (e) => this.onWrapDoubleClick(e),
       guideLayer, wallLayer, pieces, patches,
       drawMode: S.liftMode || S.brushMode, onStageDown: (e) => this.onDrawStart(e),
-      catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(74,99,166,0.04)' : 'transparent', touchAction: 'none' },
+      catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(40,105,131,0.04)' : 'transparent', touchAction: 'none' },
       brushCanvasStyle: { position: 'absolute', left: 0, top: 0, width: disp.w + 'px', height: disp.h + 'px', zIndex: 7, pointerEvents: 'none' },
       dispWInt: Math.round(disp.w) || 1, dispHInt: Math.round(disp.h) || 1,
       onCatcherMove: (e) => this.onCatcherMove(e), onCatcherLeave: () => this.onCatcherLeave(),
       brushCursorEl: (S.brushMode && S.brushCursor && disp.w) ? React.createElement('div', {
-        style: { position: 'absolute', left: (S.brushCursor.x * disp.w) + 'px', top: (S.brushCursor.y * disp.h) + 'px', width: (S.brushSize * disp.w * 2) + 'px', height: (S.brushSize * disp.w * 2) + 'px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '1.5px dashed ' + acc, background: 'rgba(74,99,166,0.08)', pointerEvents: 'none', zIndex: 41 },
+        style: { position: 'absolute', left: (S.brushCursor.x * disp.w) + 'px', top: (S.brushCursor.y * disp.h) + 'px', width: (S.brushSize * disp.w * 2) + 'px', height: (S.brushSize * disp.w * 2) + 'px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '1.5px dashed ' + acc, background: 'rgba(40,105,131,0.08)', pointerEvents: 'none', zIndex: 41 },
       }) : null,
 
       onboardingEl,
@@ -1525,14 +1540,14 @@ class Component extends DCLogic {
       hintText: (S.brushMode ? (S.brushStrokeCount > 0 ? 'Painting — ' + S.brushStrokeCount + ' stroke' + (S.brushStrokeCount === 1 ? '' : 's') + ' so far. Click & drag over any spot to blend it in.' : 'Click and drag over any spot — color blends in from the surrounding wall as you paint.') : (S.liftMode ? 'Drag a box around the art already on the wall to lift it off.' : 'Add art, upload a photo, or lift the existing piece. Drag to arrange; shift-click for several.')),
 
       scaleStatus: ready ? 'set' : 'not set',
-      scaleStatusColor: ready ? '#3f7d4e' : '#c0392b',
+      scaleStatusColor: ready ? '#56949f' : '#b4637a',
       wallHeightStr: S.wallHeightStr, onWallHeight: (e) => this.onWallHeight(e),
       wallWidthStr: S.wallWidthStr, onWallWidth: (e) => this.onWallWidth(e),
       onUnitIn: () => this.onUnitIn(), onUnitCm: () => this.onUnitCm(), unitInStyle: seg(S.unit === 'in'), unitCmStyle: seg(S.unit === 'cm'),
       onToggleLock: () => this.onToggleLock(),
       lockLabel: S.wallLocked ? '🔒' : '🔓',
       lockTitle: S.wallLocked ? 'Guides locked — tap to adjust' : 'Lock floor & wall guides',
-      lockBtnStyle: { justifySelf: 'stretch', padding: '7px 9px', borderRadius: 7, border: '1px solid ' + (S.wallLocked ? '#4a4a4a' : '#d9d7d2'), background: S.wallLocked ? '#4a4a4a' : '#fff', fontSize: 15, lineHeight: 1, cursor: 'pointer' },
+      lockBtnStyle: { justifySelf: 'stretch', padding: '7px 9px', borderRadius: 7, border: '1px solid ' + (S.wallLocked ? '#4a4a4a' : '#dfdad9'), background: S.wallLocked ? '#4a4a4a' : '#fff', fontSize: 15, lineHeight: 1, cursor: 'pointer' },
 
       rectW: S.rectW, rectH: S.rectH, onRectW: (e) => this.onRectW(e), onRectH: (e) => this.onRectH(e), swatches,
       onAddRect: () => this.onAddRect(), addRectStyle: primary(!ready || !(this.toIn(S.rectW) > 0 && this.toIn(S.rectH) > 0)),
@@ -1561,8 +1576,8 @@ class Component extends DCLogic {
       onAlignT: () => this.align('t'), onAlignCV: () => this.align('cv'), onAlignB: () => this.align('b'),
       onDistH: () => this.distribute('h'), onDistV: () => this.distribute('v'),
       onDuplicate: () => this.duplicateSelected(), onDeleteSel: () => this.deleteSelected(),
-      selActionBtn: { flex: 1, padding: '8px', border: '1px solid #e2e1de', background: '#fff', color: '#1c1b19', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
-      selDeleteBtn: { flex: 1, padding: '8px', border: '1px solid #e7c9c4', background: '#fff', color: '#c0392b', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
+      selActionBtn: { flex: 1, padding: '8px', border: '1px solid #dfdad9', background: '#fff', color: '#575279', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
+      selDeleteBtn: { flex: 1, padding: '8px', border: '1px solid #e7c9c4', background: '#fff', color: '#b4637a', borderRadius: 8, font: '600 12.5px system-ui', cursor: 'pointer' },
 
       onToggleDims: () => this.onToggleDims(), onToggleGuides: () => this.onToggleGuides(), onToggleWall: () => this.onToggleWall(),
       dimsToggleStyle: toggleStyle(S.showDims), guidesToggleStyle: toggleStyle(S.showSpacing || S.showAlignGrid), wallToggleStyle: toggleStyle(S.showWall),
@@ -1573,7 +1588,7 @@ class Component extends DCLogic {
       hasPieces: S.pieces.length > 0, pieceCount: S.pieces.length, pieceRows,
       onReplaceWall: (e) => this.onReplaceWall(e),
       hasWallHistory: S.wallHistory.length > 1,
-      wallHistoryRows: S.wallHistory.map((src, i) => { const active = src === S.wallSrc; return { onRestore: () => this.switchWall(src), style: { flex: '0 0 auto', width: 40, height: 28, borderRadius: 5, border: '1.5px solid ' + (active ? acc : '#e2e1de'), background: '#f0efec center/cover', backgroundImage: 'url(' + src + ')', cursor: active ? 'default' : 'pointer', opacity: active ? 1 : 0.85 } }; }),
+      wallHistoryRows: S.wallHistory.map((src, i) => { const active = src === S.wallSrc; return { onRestore: () => this.switchWall(src), style: { flex: '0 0 auto', width: 40, height: 28, borderRadius: 5, border: '1.5px solid ' + (active ? acc : '#dfdad9'), background: '#f4ede8 center/cover', backgroundImage: 'url(' + src + ')', cursor: active ? 'default' : 'pointer', opacity: active ? 1 : 0.85 } }; }),
 
       hasLibrary: S.library.length > 0, libraryCount: S.library.length,
       libraryRows: S.library.map(item => ({
@@ -1588,7 +1603,7 @@ class Component extends DCLogic {
         onEditBlur: () => this.commitRenameLib(),
         stopProp: (e) => e.stopPropagation(),
         name: item.name, dims: (item.wIn && item.hIn) ? (this.fmt(item.wIn) + ' × ' + this.fmt(item.hIn) + ' ' + S.unit) : 'size varies',
-        thumbStyle: { flex: '0 0 auto', width: 34, height: 34, borderRadius: 5, background: '#f0efec center/cover', backgroundImage: 'url(' + item.src + ')' },
+        thumbStyle: { flex: '0 0 auto', width: 34, height: 34, borderRadius: 5, background: '#f4ede8 center/cover', backgroundImage: 'url(' + item.src + ')' },
       })),
       onSaveConfig: () => this.saveConfig(), onLoadConfig: (e) => this.onLoadConfig(e),
 
