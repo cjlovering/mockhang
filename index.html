@@ -177,21 +177,20 @@
 
       <sc-if value="{{ showRectOptions }}" hint-placeholder-val="{{ false }}">
         <div style="margin-bottom:9px;padding:9px 10px;border:1px solid #dfdad9;border-radius:8px;background:#faf4ed">
-          <div style="display:flex;gap:8px;margin-bottom:9px">
-            <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Width ({{ unit }})</div>
-              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
+          <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:10px">
+            <label style="flex:0 0 52px">
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">W ({{ unit }})</div>
+              <input type="number" value="{{ rectW }}" onChange="{{ onRectW }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:5px 6px;border:1px solid #dfdad9;border-radius:7px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none;box-sizing:border-box" />
             </label>
-            <label style="flex:1">
-              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Height ({{ unit }})</div>
-              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:8px 10px;border:1px solid #dfdad9;border-radius:7px;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none" />
+            <label style="flex:0 0 52px">
+              <div style="font:500 10px system-ui;color:#9893a5;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">H ({{ unit }})</div>
+              <input type="number" value="{{ rectH }}" onChange="{{ onRectH }}" onDoubleClick="{{ selectAll }}" style="width:100%;padding:5px 6px;border:1px solid #dfdad9;border-radius:7px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;outline:none;box-sizing:border-box" />
             </label>
-          </div>
-
-          <div style="display:flex;gap:7px;margin-bottom:11px">
-            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
-              <button onClick="{{ s.onPick }}" style="{{ s.style }}"></button>
-            </sc-for>
+            <div style="display:flex;gap:6px;flex:1;margin-left:4px">
+              <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="4">
+                <button onClick="{{ s.onPick }}" style="{{ s.style }}"></button>
+              </sc-for>
+            </div>
           </div>
 
           <button onClick="{{ onAddRect }}" style="{{ addRectStyle }}">Add rectangle</button>
@@ -274,7 +273,6 @@
           <button onClick="{{ onDuplicate }}" style="{{ selActionBtn }}">Duplicate</button>
           <button onClick="{{ onDeleteSel }}" style="{{ selDeleteBtn }}">Delete</button>
         </div>
-        <div style="font:400 10.5px system-ui;color:#9893a5;margin-top:8px;line-height:1.4">Drag empty wall or shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
       </div>
     </sc-if>
 
@@ -416,7 +414,7 @@ class Component extends DCLogic {
     selWStr: '', selHStr: '',
   };
 
-  swatchColors = ['#b9563f', '#d9b26a', '#4a5a52', '#2f3a46', '#8a8f98', '#e8e2d6'];
+  swatchColors = ['#b9563f', '#d9b26a', '#4a5a52', '#e8e2d6'];
 
   componentDidMount() {
     // fade out the static loading splash now that the real UI has painted
