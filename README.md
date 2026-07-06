@@ -1,44 +1,19 @@
-# Art Placer
+# mockhang
+
+**Live: https://cjlovering.github.io/mockhang/**
 
 Arrange artwork on a photo of your wall, to scale. Calibrate with a wall-height
-measurement, add rectangles or upload/crop real artwork, lift existing art off
-the wall, touch up the seam with a texture-matched brush, and read exact
-dimensions and spacing.
+measurement, place rectangles or real artwork, and read exact dimensions and
+spacing. Single static page — no build, no server. Sessions auto-save to the
+browser; use **Save config** / **Load config** to move between devices.
 
-It's a single static page — no server, no build. Everything runs in the browser.
-
-## Run it
-
-Because it loads React over the network (via `support.js`) and reads its own
-HTML, open it through a web server rather than `file://`:
+## Dev
 
 ```sh
-# any static server works
-python3 -m http.server 8000
-# then open http://localhost:8000/
+just dev     # hot-reloading dev server → http://localhost:5174
+just logs    # recent dev-server output
+just stop    # stop the dev server
+just check   # syntax-check the app scripts
 ```
 
-## Deploy (GitHub Pages)
-
-Push to `main`/`master`. The workflow in `.github/workflows/deploy.yml`
-publishes the repo root to Pages. In the repo settings, set
-**Settings → Pages → Source → GitHub Actions**. The live app is `index.html`.
-
-## Storage
-
-Your session **auto-saves to this browser** (IndexedDB) and restores on reload —
-wall photo, calibration, placed art, lift patches, brush touch-ups, and your
-artwork library. IndexedDB is used (not `localStorage`) so large photos don't
-hit the ~5 MB quota and writes stay off the main thread.
-
-Use **Save config** / **Load config** to export a `.json` backup or move a
-project to another device or browser.
-
-## Files
-
-| File | Purpose |
-| --- | --- |
-| `index.html` | The app (deployed page). |
-| `support.js` | `dc-runtime` — parses the `<x-dc>` template, loads React, mounts the component. |
-| `uploads/wall_image-*.jpg` | Default wall photo shown on first load. |
-| `Art Placer.dc.html` | Original artifact export this page was built from. |
+Pushing to `main` deploys to GitHub Pages via `.github/workflows/deploy.yml`.

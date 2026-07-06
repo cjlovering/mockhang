@@ -1,6 +1,6 @@
 name: Deploy to GitHub Pages
 
-# Art Placer is a fully static site (no build step) — this just publishes the
+# mockhang is a fully static site (no build step) — this just publishes the
 # repo contents to GitHub Pages on every push to the default branch.
 
 on:

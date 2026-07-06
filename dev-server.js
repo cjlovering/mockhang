@@ -1,4 +1,4 @@
-// Zero-dependency static server with live reload for Art Placer.
+// Zero-dependency static server with live reload for mockhang.
 // Serves this directory and injects a tiny SSE snippet into index.html so the
 // browser reloads whenever any project file changes. No npm install needed.
 //   node dev-server.js         (PORT env var overrides the default)
@@ -62,5 +62,5 @@ try {
 }
 
 server.listen(PORT, () => {
-  console.log('Art Placer dev server → http://localhost:' + PORT + '  (live reload on)');
+  console.log('mockhang dev server → http://localhost:' + PORT + '  (live reload on)');
 });

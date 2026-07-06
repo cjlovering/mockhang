@@ -1,7 +1,7 @@
-# Art Placer — common dev commands. Run `just` to list them.
+# mockhang — common dev commands. Run `just` to list them.
 
 port    := "5174"
-session := "artplacer"
+session := "mockhang"
 
 # list available recipes
 default:
@@ -21,7 +21,7 @@ dev:
     tmux kill-session -t {{session}} 2>/dev/null || true
     tmux new-session -d -s {{session}} "PORT={{port}} node dev-server.js"
     sleep 0.4
-    echo "Art Placer running in tmux session '{{session}}' → http://localhost:{{port}}"
+    echo "mockhang running in tmux session '{{session}}' → http://localhost:{{port}}"
     echo "  attach: just attach   logs: just logs   stop: just stop"
 
 # start the dev server as a plain background process (no tmux)
@@ -31,7 +31,7 @@ dev-bg:
     pkill -f "node dev-server.js" 2>/dev/null || true
     PORT={{port}} nohup node dev-server.js > .devserver.log 2>&1 &
     sleep 0.4
-    echo "Art Placer running → http://localhost:{{port}}  (logs: just logs)"
+    echo "mockhang running → http://localhost:{{port}}  (logs: just logs)"
 
 # run the dev server in the foreground (Ctrl-C to stop)
 serve:
