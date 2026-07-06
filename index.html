@@ -253,7 +253,7 @@
           <button onClick="{{ onDuplicate }}" style="{{ selActionBtn }}">Duplicate</button>
           <button onClick="{{ onDeleteSel }}" style="{{ selDeleteBtn }}">Delete</button>
         </div>
-        <div style="font:400 10.5px system-ui;color:#9893a5;margin-top:8px;line-height:1.4">Shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
+        <div style="font:400 10.5px system-ui;color:#9893a5;margin-top:8px;line-height:1.4">Drag empty wall or shift-click to select several · drag corners to resize · arrow keys nudge 0.1{{ unit }} (shift = 1{{ unit }}) · ⌘/Ctrl C/V copy · ⌘/Ctrl Z undo · ⌘/Ctrl ⇧Z redo · Del to remove</div>
       </div>
     </sc-if>
 
@@ -379,7 +379,7 @@ class Component extends DCLogic {
     wall: { top: 0.06, bottom: 0.72, left: 0.03, right: 0.97 },
     wallHeightIn: 96, wallHeightStr: '96',
     wallWidthIn: 0, wallWidthStr: '',
-    liftMode: false, draft: null,
+    liftMode: false, draft: null, marquee: null,
     pieces: [], patches: [],
     selectedIds: [],
     showDims: true, showSpacing: true, showWall: true, wallLocked: false,
@@ -1244,7 +1244,15 @@ class Component extends DCLogic {
   }
   onCatcherMove(e) { if (this.state.brushMode) this.setState({ brushCursor: this.frac(e, this.wrapRef.current) }); }
   onCatcherLeave() { if (this.state.brushMode) this.setState({ brushCursor: null }); }
-  onWrapDown() { if (!this.state.liftMode && !this.state.brushMode) this.setState({ selectedIds: [] }); }
+  onWrapDown(e) {
+    if (this.state.liftMode || this.state.brushMode) return;
+    // click on empty wall: start a marquee drag; a plain click (no movement)
+    // keeps the old behaviour of clearing the selection. Shift adds to it.
+    const p = this.frac(e, this.wrapRef.current);
+    const base = e.shiftKey ? this.state.selectedIds.slice() : [];
+    this.active = { type: 'marquee', a: p, base, moved: false };
+    this.setState({ selectedIds: base });
+  }
   onWrapDoubleClick(e) {
     if (e.target !== this.wrapRef.current && e.target !== this.imgRef.current) return;
     const s = this.state; const anyOn = s.showDims || s.showSpacing || s.showWall || s.showAlignGrid;
@@ -1304,6 +1312,13 @@ class Component extends DCLogic {
       this.setState(s => ({ pieces: s.pieces.map(x => x.id === a.id ? { ...x, ...patch } : x) }));
     } else if (a.type === 'lift') {
       this.setState(s => ({ draft: { ...s.draft, b: this.frac(e, this.wrapRef.current) } }));
+    } else if (a.type === 'marquee') {
+      const p = this.frac(e, this.wrapRef.current);
+      if (!a.moved && Math.abs(p.x - a.a.x) * disp.w < 4 && Math.abs(p.y - a.a.y) * disp.h < 4) return;
+      a.moved = true;
+      const box = { l: Math.min(a.a.x, p.x), t: Math.min(a.a.y, p.y), r: Math.max(a.a.x, p.x), b: Math.max(a.a.y, p.y) };
+      const hit = this.state.pieces.filter(pc => { const sz = this.sizeFrac(pc); return pc.fx < box.r && pc.fx + sz.w > box.l && pc.fy < box.b && pc.fy + sz.h > box.t; }).map(pc => pc.id);
+      this.setState({ marquee: { a: a.a, b: p }, selectedIds: [...a.base, ...hit.filter(id => !a.base.includes(id))] });
     } else if (a.type === 'brush') {
       const p = this.frac(e, this.wrapRef.current); const dispw = Math.max(1, disp.w);
       const distFrac = Math.hypot(p.x - a.last.x, p.y - a.last.y); const stepFrac = 4 / dispw;
@@ -1336,6 +1351,7 @@ class Component extends DCLogic {
     if (!a) return;
     if (a.type === 'lift') { const d = this.state.draft; if (d) { const rf = { x: Math.min(d.a.x, d.b.x), y: Math.min(d.a.y, d.b.y), w: Math.abs(d.b.x - d.a.x), h: Math.abs(d.b.y - d.a.y) }; this.createLift(rf); } }
     if (a.type === 'move') this.setState({ snap: [] });
+    if (a.type === 'marquee') this.setState({ marquee: null });
     // a handle-resize changed the piece's size without changing the selection — force
     // the Selected-panel width/height fields to re-read the new dimensions
     if (a.type === 'resize') { this._selSizeId = null; this.syncSelSizeFields(); }
@@ -1344,7 +1360,7 @@ class Component extends DCLogic {
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     const mod = e.metaKey || e.ctrlKey;
-    if (e.key === 'Escape') { this.setState({ liftMode: false, brushMode: false, showRectOptions: false, selectedIds: [], draft: null }); return; }
+    if (e.key === 'Escape') { this.setState({ liftMode: false, brushMode: false, showRectOptions: false, selectedIds: [], draft: null, marquee: null }); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.state.selectedIds.length) { e.preventDefault(); this.deleteSelected(); return; }
     if (mod && (e.key === 'c' || e.key === 'C')) { this.copySelected(); return; }
     if (mod && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); this.paste(); return; }
@@ -1427,6 +1443,7 @@ class Component extends DCLogic {
     const gk = [];
     if (disp.w) {
       if (S.draft) { const d = S.draft; const x = Math.min(d.a.x, d.b.x) * disp.w, y = Math.min(d.a.y, d.b.y) * disp.h, w = Math.abs(d.b.x - d.a.x) * disp.w, h = Math.abs(d.b.y - d.a.y) * disp.h; gk.push(React.createElement('rect', { key: 'draft', x, y, width: w, height: h, fill: 'rgba(40,105,131,0.12)', stroke: acc, strokeWidth: 1.5, strokeDasharray: '5 4' })); }
+      if (S.marquee) { const m = S.marquee; const x = Math.min(m.a.x, m.b.x) * disp.w, y = Math.min(m.a.y, m.b.y) * disp.h, w = Math.abs(m.b.x - m.a.x) * disp.w, h = Math.abs(m.b.y - m.a.y) * disp.h; gk.push(React.createElement('rect', { key: 'marquee', x, y, width: w, height: h, fill: 'rgba(40,105,131,0.07)', stroke: acc, strokeWidth: 1, strokeDasharray: '4 3' })); }
       if (S.showAlignGrid) this.computeAlignGuides().forEach((l, i) => { gk.push(React.createElement('line', { key: 'ag' + i, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, stroke: acc, strokeWidth: 1, strokeDasharray: '1 5', opacity: 0.55 })); gk.push(...this.tickMarks(l.x1, l.y1, l.x2, l.y2, { color: acc, opacity: 0.35, spacing: 16, keyPrefix: 'agk' + i + '_' })); });
       const selPieces = S.pieces.filter(p => S.selectedIds.includes(p.id));
       if (S.showSpacing && selPieces.length && ready) {
@@ -1545,7 +1562,7 @@ class Component extends DCLogic {
     return {
       rootRef: this.rootRef, wrapRef: this.wrapRef, cropRef: this.cropRef, imgRef: this.imgRef, brushRef: this.brushRef,
       wallSrc: S.wallSrc, unit: S.unit,
-      onImgLoad: () => this.onImgLoad(), onWrapDown: () => this.onWrapDown(), onWrapDoubleClick: (e) => this.onWrapDoubleClick(e),
+      onImgLoad: () => this.onImgLoad(), onWrapDown: (e) => this.onWrapDown(e), onWrapDoubleClick: (e) => this.onWrapDoubleClick(e),
       guideLayer, wallLayer, pieces, patches,
       drawMode: S.liftMode || S.brushMode, onStageDown: (e) => this.onDrawStart(e),
       catcherStyle: { position: 'absolute', inset: 0, zIndex: 40, cursor: S.brushMode ? 'cell' : 'crosshair', background: S.liftMode ? 'rgba(40,105,131,0.04)' : 'transparent', touchAction: 'none' },
