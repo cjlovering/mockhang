@@ -1,6 +1,6 @@
 # Art Placer — common dev commands. Run `just` to list them.
 
-port    := "5173"
+port    := "5174"
 session := "artplacer"
 
 # list available recipes

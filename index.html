@@ -1459,6 +1459,27 @@ class Component extends DCLogic {
         gk.push(React.createElement('line', { key: 'gr', x1: right, y1: cy, x2: rPx, y2: cy, ...line }));
         gk.push(...this.tickMarks(right, cy, rPx, cy, { color: gc, opacity: 0.45, spacing: 10, keyPrefix: 'grk_' }));
         gk.push(Tp((right + rPx) / 2, cy + 13, (rPx - right) / ppiX));
+        // each wall bound the guide lines reach is split by the intersection
+        // point into two segments: label each segment's length along the bound,
+        // and the intersection itself with its % position (floor: % from the
+        // left corner; sides: % up from the floor)
+        const Tc = (key, x, y, txt, anchor) => React.createElement('text', { key, x, y, fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: 9, fontWeight: 500, fill: '#575279', stroke: '#fff', strokeWidth: 2.5, paintOrder: 'stroke', textAnchor: anchor, opacity: 0.75 }, txt);
+        const wallH = floorPx - ceilPx, wallW = rPx - lPx;
+        if (wallH > 0 && wallW > 0) {
+          const u = (px, ppi) => this.fmt(px / ppi) + ' ' + S.unit;
+          // floor bound: [corner —1— x —2— corner], x under the artwork's horizontal midpoint
+          gk.push(Tc('gfs1', (lPx + cx) / 2, floorPx - 5, u(cx - lPx, ppiX), 'middle'));
+          gk.push(Tc('gfs2', (cx + rPx) / 2, floorPx - 5, u(rPx - cx, ppiX), 'middle'));
+          gk.push(Tc('gfsx', cx + 6, floorPx + 11, Math.round((cx - lPx) / wallW * 100) + '%', 'start'));
+          // side bounds: segments above/below the artwork's vertical midpoint
+          const pctH = Math.round((floorPx - cy) / wallH * 100) + '%';
+          gk.push(Tc('gls1', lPx + 5, (ceilPx + cy) / 2, u(cy - ceilPx, ppiY), 'start'));
+          gk.push(Tc('gls2', lPx + 5, (cy + floorPx) / 2, u(floorPx - cy, ppiY), 'start'));
+          gk.push(Tc('glsx', lPx + 5, cy + 12, pctH, 'start'));
+          gk.push(Tc('grs1', rPx - 5, (ceilPx + cy) / 2, u(cy - ceilPx, ppiY), 'end'));
+          gk.push(Tc('grs2', rPx - 5, (cy + floorPx) / 2, u(floorPx - cy, ppiY), 'end'));
+          gk.push(Tc('grsx', rPx - 5, cy - 6, pctH, 'end'));
+        }
       }
       // ---- move guides: inter-piece distances + orange alignment highlights ----
       const mv = this.active && this.active.type === 'move' ? this.active : null;
