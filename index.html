@@ -60,6 +60,7 @@
 
   <!-- ============ STAGE ============ -->
   <div class="ap-stage" style="flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;background:radial-gradient(circle at 50% 40%, #fffaf3 0%, #f2e9e1 100%)">
+    <sc-if value="{{ hasWall }}" hint-placeholder-val="{{ true }}">
     <div ref="{{ wrapRef }}" onPointerDown="{{ onWrapDown }}" onDoubleClick="{{ onWrapDoubleClick }}" style="position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0;box-shadow:0 12px 40px -12px rgba(0,0,0,0.35);border-radius:2px;overflow:visible">
       <img ref="{{ imgRef }}" src="{{ wallSrc }}" onLoad="{{ onImgLoad }}" draggable="false" style="display:block;max-width:100%;max-height:calc(100vh - 56px);width:auto;height:auto;user-select:none;border-radius:2px" />
 
@@ -91,6 +92,26 @@
       </sc-if>
       {{ brushCursorEl }}
     </div>
+    </sc-if>
+
+    <sc-if value="{{ noWall }}" hint-placeholder-val="{{ false }}">
+      <div onDragOver="{{ onWallDragOver }}" onDrop="{{ onWallDrop }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,0.88);border:1.5px dashed #cecacd;border-radius:16px;padding:46px 52px;max-width:430px;text-align:center;box-shadow:0 18px 50px -20px rgba(0,0,0,0.22);animation:ap-piece-in 0.24s ease">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#286983" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;opacity:0.85"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+        <div style="font:600 16.5px system-ui;color:#575279;letter-spacing:-0.01em">Start with a photo of your wall</div>
+        <div style="font:400 12.5px system-ui;color:#797593;line-height:1.55;max-width:320px">Shoot it straight-on, floor to ceiling if you can — you'll set the real height next, then place art true-to-size. JPG, PNG, or HEIC.</div>
+        <label class="btn-hover" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:14px;padding:10px 22px;background:var(--accent);color:#fff;border-radius:9px;font:600 13px system-ui;cursor:pointer;box-shadow:0 4px 14px -4px rgba(40,105,131,0.5)">
+          <span>Upload wall photo</span>
+          <input type="file" accept="image/*" capture="environment" onChange="{{ onReplaceWall }}" style="display:none" />
+        </label>
+        <div style="font:400 11px system-ui;color:#9893a5;margin-top:6px">…or drag &amp; drop it here</div>
+        <sc-if value="{{ hasUploadNotice }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:8px;font:500 11.5px system-ui;color:#797593;margin-top:10px;background:#f4ede8;border:1px solid #dfdad9;border-radius:7px;padding:8px 10px"><span style="width:13px;height:13px;border:2px solid #dfdad9;border-top-color:var(--accent);border-radius:50%;animation:ap-spin 0.7s linear infinite;flex:0 0 auto"></span>{{ uploadNotice }}</div>
+        </sc-if>
+        <sc-if value="{{ hasUploadError }}" hint-placeholder-val="{{ false }}">
+          <div style="font:400 11px system-ui;color:#b4637a;margin-top:10px;line-height:1.4;background:#fdf1ef;border:1px solid #f2d3ce;border-radius:7px;padding:8px 9px">{{ uploadError }}</div>
+        </sc-if>
+      </div>
+    </sc-if>
 
     {{ onboardingEl }}
 
@@ -373,7 +394,7 @@ class Component extends DCLogic {
   newId(prefix) { return (prefix || 'p') + Date.now().toString(36) + '_' + (++this._idSeq).toString(36); }
 
   state = {
-    wallSrc: 'uploads/wall_image-1783003840450.jpg',
+    wallSrc: '', // empty until the user uploads a wall photo (or a saved session restores one)
     unit: 'in',
     disp: { w: 0, h: 0 },
     wall: { top: 0.06, bottom: 0.72, left: 0.03, right: 0.97 },
@@ -404,7 +425,7 @@ class Component extends DCLogic {
     this.applyVars();
     if (this.props.defaultUnit && this.props.defaultUnit !== this.state.unit) this.setState({ unit: this.props.defaultUnit });
     try { const raw = localStorage.getItem('artPlacerLibrary'); if (raw) { const lib = JSON.parse(raw); if (Array.isArray(lib)) this.setState({ library: lib }); } } catch (e) {}
-    this.setState(s => ({ wallHistory: [s.wallSrc] }));
+    this.setState(s => ({ wallHistory: s.wallSrc ? [s.wallSrc] : [] }));
     // restore the full working session (wall, scale, art, patches, brush,
     // library) saved on the last visit — async, so the default renders first
     // and then flips to the restored state.
@@ -619,7 +640,7 @@ class Component extends DCLogic {
   applyVars() { if (this.rootRef.current) this.rootRef.current.style.setProperty('--accent', this.accent()); }
   accent() { return this.props.accent || '#286983'; }
 
-  measure() { const el = this.wrapRef.current; if (el) { const r = el.getBoundingClientRect(); if (r.width) this.setState({ disp: { w: r.width, h: r.height } }); } }
+  measure() { const el = this.wrapRef.current; if (el) { if (this.ro && !this.ro_observed) { this.ro.observe(el); this.ro_observed = true; } const r = el.getBoundingClientRect(); if (r.width) this.setState({ disp: { w: r.width, h: r.height } }); } }
   onImgLoad() { this.measure(); this.buildWallCanvas(); }
 
   // wall image sampling canvas + auto-guess bounds
@@ -1110,6 +1131,9 @@ class Component extends DCLogic {
   }
   onReplaceWall(e) {
     const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = '';
+    this.applyWallFile(f);
+  }
+  applyWallFile(f) {
     const heic = this.isHeic(f);
     this.setState({ uploadError: null, uploadNotice: heic ? 'Converting HEIC photo…' : null });
     this.readImage(f, (img, url, failed) => {
@@ -1117,6 +1141,12 @@ class Component extends DCLogic {
       if (failed || !img) { this.setState({ uploadError: heic ? 'This HEIC photo couldn’t be converted. Export it to JPG and try again.' : 'Could not read that photo — try a JPG or PNG.' }); return; }
       this.switchWall(this.downscaleToDataURL(img, url, 2000));
     });
+  }
+  onWallDragOver(e) { e.preventDefault(); }
+  onWallDrop(e) {
+    e.preventDefault();
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) this.applyWallFile(f);
   }
   // keep the last 3 wall photos used (including the current one) so you can flip back without re-uploading
   switchWall(src) {
@@ -1625,6 +1655,8 @@ class Component extends DCLogic {
 
       hasPieces: S.pieces.length > 0, pieceCount: S.pieces.length, pieceRows,
       onReplaceWall: (e) => this.onReplaceWall(e),
+      hasWall: !!S.wallSrc, noWall: !S.wallSrc,
+      onWallDragOver: (e) => this.onWallDragOver(e), onWallDrop: (e) => this.onWallDrop(e),
       hasWallHistory: S.wallHistory.length > 1,
       wallHistoryRows: S.wallHistory.map((src, i) => { const active = src === S.wallSrc; return { onRestore: () => this.switchWall(src), style: { flex: '0 0 auto', width: 40, height: 28, borderRadius: 5, border: '1.5px solid ' + (active ? acc : '#dfdad9'), background: '#f4ede8 center/cover', backgroundImage: 'url(' + src + ')', cursor: active ? 'default' : 'pointer', opacity: active ? 1 : 0.85 } }; }),
 
